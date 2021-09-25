@@ -10,6 +10,10 @@ public class PlanetScript : MonoBehaviour
         Water,
         Nitrogen,
         Uranium,
+        Sulphur,
+        Coal,
+        Iron,
+        Gold
     };
 
     [Serializable]
@@ -28,6 +32,7 @@ public class PlanetScript : MonoBehaviour
 
     [SerializeField] PlanetInfo planetInfo;
     [SerializeField] TextMesh nameText;
+    [SerializeField] UIManager uiManager;
 
     List<TextMesh> productionText = new List<TextMesh>();
 
@@ -93,5 +98,11 @@ public class PlanetScript : MonoBehaviour
             productionText[i].text = "" + planetInfo.productionResources[i].ToString() + ": " +
                 planetInfo.resourceValues[ResourceNum(i)] + "/" + planetInfo.productionMax[i] + " +" + planetInfo.productionTime[i] + "/s";
         }
+    }
+
+    void OnMouseDown()
+    {
+        print("clicked");
+        uiManager.UpdateInfoBox(transform.position);
     }
 }
