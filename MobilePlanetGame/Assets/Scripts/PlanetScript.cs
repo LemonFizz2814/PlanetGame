@@ -27,6 +27,7 @@ public class PlanetScript : MonoBehaviour
     };
 
     [SerializeField] PlanetInfo planetInfo;
+    [SerializeField] TextMesh nameText;
 
     List<TextMesh> productionText = new List<TextMesh>();
 
@@ -39,6 +40,9 @@ public class PlanetScript : MonoBehaviour
     {
         lengthOfAllResources = Enum.GetNames(typeof(ERESOURCES)).Length;
         lengthOfProdRes = planetInfo.productionResources.Length;
+
+        nameText.text = planetInfo.name;
+        GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
 
         foreach (Transform child in productionTextsParent)
         {
@@ -54,6 +58,8 @@ public class PlanetScript : MonoBehaviour
         {
             planetInfo.resourceValues.Add(0);
         }
+
+        UpdateProductionText();
     }
 
     private void Update()
@@ -66,13 +72,18 @@ public class PlanetScript : MonoBehaviour
             {
                 planetInfo.time[i] = planetInfo.productionTime[i];
 
-                if (planetInfo.resourceValues[i] + planetInfo.productionGain[i] <= planetInfo.productionMax[i])
+                if (planetInfo.resourceValues[ResourceNum(i)] + planetInfo.productionGain[i] <= planetInfo.productionMax[i])
                 {
-                    planetInfo.resourceValues[i] += planetInfo.productionGain[i];
+                    planetInfo.resourceValues[ResourceNum(i)] += planetInfo.productionGain[i];
                     UpdateProductionText();
                 }
             }
         }
+    }
+
+    int ResourceNum(int _i)
+    {
+        return (int)planetInfo.productionResources[_i];
     }
 
     void UpdateProductionText()
@@ -80,7 +91,7 @@ public class PlanetScript : MonoBehaviour
         for (int i = 0; i < lengthOfProdRes; i++)
         {
             productionText[i].text = "" + planetInfo.productionResources[i].ToString() + ": " +
-                planetInfo.resourceValues[(int)planetInfo.productionResources[i]] + "/" + planetInfo.productionMax[i] + " +" + planetInfo.productionTime[i] + "/s";
+                planetInfo.resourceValues[ResourceNum(i)] + "/" + planetInfo.productionMax[i] + " +" + planetInfo.productionTime[i] + "/s";
         }
     }
 }
