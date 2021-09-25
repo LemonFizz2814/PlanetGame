@@ -26,6 +26,9 @@ public class PlanetScript : MonoBehaviour
         public float[] productionGain;
         public float[] productionMax;
 
+        public float[] upgradeGain;
+        public float[] upgradeStorage;
+
         [NonSerialized] public List<float> resourceValues = new List<float>();
         [NonSerialized] public List<float> time = new List<float>();
     };
@@ -100,9 +103,26 @@ public class PlanetScript : MonoBehaviour
         }
     }
 
+    public void UpgradeProduction()
+    {
+        for (int i = 0; i < lengthOfProdRes; i++)
+        {
+            planetInfo.productionGain[i] += planetInfo.upgradeGain[i];
+        }
+        UpdateProductionText();
+    }
+    public void UpgradeStorage()
+    {
+        for (int i = 0; i < lengthOfProdRes; i++)
+        {
+            planetInfo.productionMax[i] += planetInfo.upgradeStorage[i];
+        }
+        UpdateProductionText();
+    }
+
     void OnMouseDown()
     {
         print("clicked");
-        uiManager.UpdateInfoBox(transform.position);
+        uiManager.UpdateInfoBox(transform.GetComponent<PlanetScript>(), transform.position);
     }
 }
