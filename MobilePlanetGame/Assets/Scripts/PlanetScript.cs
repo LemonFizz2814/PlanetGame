@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System;
+using UnityEngine;
 
 public class PlanetScript : MonoBehaviour
 {
@@ -19,23 +19,43 @@ public class PlanetScript : MonoBehaviour
     [Serializable]
     public class PlanetInfo
     {
+        //basic info
         public string name;
         public Sprite sprite;
+
+        //production variables
         public ERESOURCES[] productionResources;
         public float[] productionTime;
         public float[] productionGain;
         public float[] productionMax;
 
-        public float[] upgradeGain;
-        public float[] upgradeStorage;
+        //level variables
+        [NonSerialized] public int level = 0;
+        [NonSerialized] public int levelTier = 0;
 
+        //lists
         [NonSerialized] public List<float> resourceValues = new List<float>();
         [NonSerialized] public List<float> time = new List<float>();
     };
 
-    [SerializeField] PlanetInfo planetInfo;
-    [SerializeField] TextMesh nameText;
-    [SerializeField] UIManager uiManager;
+    [Serializable]
+    public class UpgradeRequirements
+    {
+        public ERESOURCES[] upProdResource;
+        public int[] upProdAmount;
+        public ERESOURCES[] upStorResource;
+        public int[] upStorAmount;
+        [NonSerialized] public int maxUpgrades;
+    };
+
+    [SerializeField] private PlanetInfo planetInfo;
+    [SerializeField] private UpgradeRequirements upgradeReq;
+    [SerializeField] private TextMesh nameText;
+    [SerializeField] private UIManager uiManager;
+    [SerializeField] private GameObject collectedTextPrefab;
+
+    [SerializeField] private float collectedSpawnRand;
+    [SerializeField] private int collectedDestroy;
 
     List<TextMesh> productionText = new List<TextMesh>();
 
@@ -44,10 +64,14 @@ public class PlanetScript : MonoBehaviour
     int lengthOfAllResources;
     int lengthOfProdRes;
 
+    bool currentlyClicked = false;
+
     private void Start()
     {
         lengthOfAllResources = Enum.GetNames(typeof(ERESOURCES)).Length;
         lengthOfProdRes = planetInfo.productionResources.Length;
+
+        upgradeReq.maxUpgrades = upgradeReq.upProdResource.Length;
 
         nameText.text = planetInfo.name;
         GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
@@ -82,6 +106,14 @@ public class PlanetScript : MonoBehaviour
 
                 if (planetInfo.resourceValues[ResourceNum(i)] + planetInfo.productionGain[i] <= planetInfo.productionMax[i])
                 {
+                    Vector2 pos = new Vector2(
+                        transform.position.x + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand),
+                        transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));
+                    GameObject textObj = Instantiate(collectedTextPrefab, pos, Quaternion.identity);
+                    textObj.GetComponent<TextMesh>().text = "+" + planetInfo.productionGain[i];
+                    textObj.transform.GetChild(0).localPosition = new Vector2(4 + (planetInfo.productionGain[i].ToString().Length * 1.2f), 0);
+                    Destroy(textObj, collectedDestroy);
+
                     planetInfo.resourceValues[ResourceNum(i)] += planetInfo.productionGain[i];
                     UpdateProductionText();
                 }
@@ -105,24 +137,45 @@ public class PlanetScript : MonoBehaviour
 
     public void UpgradeProduction()
     {
+        planetInfo.level++;
+
         for (int i = 0; i < lengthOfProdRes; i++)
         {
-            planetInfo.productionGain[i] += planetInfo.upgradeGain[i];
+            planetInfo.productionGain[i] += upgradeReq.upProdAmount[i];
         }
         UpdateProductionText();
     }
     public void UpgradeStorage()
     {
+        planetInfo.level++;
+
         for (int i = 0; i < lengthOfProdRes; i++)
         {
-            planetInfo.productionMax[i] += planetInfo.upgradeStorage[i];
+            planetInfo.productionMax[i] += upgradeReq.upStorAmount[i];
         }
         UpdateProductionText();
     }
 
+    public UpgradeRequirements GetUpgradeRequirements()
+    {
+        return upgradeReq;
+    }
+    public PlanetInfo GetPlanetInfo()
+    {
+        return planetInfo;
+    }
+
     void OnMouseDown()
     {
-        print("clicked");
-        uiManager.UpdateInfoBox(transform.GetComponent<PlanetScript>(), transform.position);
+        currentlyClicked = !currentlyClicked;
+
+        if(currentlyClicked)
+        {
+            uiManager.UpdateInfoBox(transform.GetComponent<PlanetScript>(), transform.position);
+        }
+        else
+        {
+            uiManager.SetActiveInfoBox(false);
+        }
     }
 }
