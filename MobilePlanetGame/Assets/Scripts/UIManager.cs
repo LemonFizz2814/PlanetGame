@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 using UnityEngine;
 using System;
 using TMPro;
@@ -14,6 +15,7 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private GameObject resourceContent;
     [SerializeField] private GameObject resourceText;
+    [SerializeField] private GameObject[] tabObjects;
 
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
 
@@ -49,11 +51,20 @@ public class UIManager : MonoBehaviour
 
         for(int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
         {
-            //print("add");
             GameObject resourceTextObj = Instantiate(resourceText, new Vector3(0, 0, 0), Quaternion.identity);
             resourceTextObj.transform.SetParent(resourceContent.transform);
-            resourceTextObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(25, 120 - (40 * i));
+            resourceTextObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(-25, -20 - (40 * i));
+            resourceTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(320, 40);
+            resourceTextObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
+            resourceTextObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
+
+            int x = i;
+            resourceTextObj.transform.GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
+
+            resourceTextObj.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + 100;
         }
+
+        resourceContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40 * Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length);
     }
 
     public void UpgradeProductionButtonPressed()
@@ -64,5 +75,20 @@ public class UIManager : MonoBehaviour
     public void UpgradeStorageButtonPressed()
     {
         selectedPlanet.UpgradeStorage();
+    }
+
+    public void ShowTab(int _i)
+    {
+        for(int i = 0; i < tabObjects.Length; i++)
+        {
+            tabObjects[i].SetActive(false);
+        }
+
+        tabObjects[_i].SetActive(true);
+    }
+
+    public void TransferPressed(PlanetScript.ERESOURCES _resource)
+    {
+        print("transferring " + _resource.ToString());
     }
 }

@@ -13,7 +13,8 @@ public class PlanetScript : MonoBehaviour
         Sulphur,
         Coal,
         Iron,
-        Gold
+        Gold,
+        Slime,
     };
 
     [Serializable]
@@ -51,8 +52,9 @@ public class PlanetScript : MonoBehaviour
     [SerializeField] private PlanetInfo planetInfo;
     [SerializeField] private UpgradeRequirements upgradeReq;
     [SerializeField] private TextMesh nameText;
-    [SerializeField] private UIManager uiManager;
     [SerializeField] private GameObject collectedTextPrefab;
+    [SerializeField] private GameObject productionTextPrefab;
+    private UIManager uiManager;
 
     [SerializeField] private float collectedSpawnRand;
     [SerializeField] private int collectedDestroy;
@@ -71,19 +73,21 @@ public class PlanetScript : MonoBehaviour
         lengthOfAllResources = Enum.GetNames(typeof(ERESOURCES)).Length;
         lengthOfProdRes = planetInfo.productionResources.Length;
 
+        uiManager = GameObject.FindGameObjectWithTag("Canvas").GetComponent<UIManager>();
+
         upgradeReq.maxUpgrades = upgradeReq.upProdResource.Length;
 
         nameText.text = planetInfo.name;
         GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
 
-        foreach (Transform child in productionTextsParent)
-        {
-            productionText.Add(child.GetComponent<TextMesh>());
-        }
-
         for (int i = 0; i < lengthOfProdRes; i++)
         {
             planetInfo.time.Add(planetInfo.productionTime[i]);
+            GameObject productionTextObj = Instantiate(productionTextPrefab, new Vector3(0, 0, 0), Quaternion.identity);
+
+            productionText.Add(productionTextObj.GetComponent<TextMesh>());
+            productionTextObj.transform.SetParent(productionTextsParent);
+            productionTextObj.transform.localPosition = new Vector3(0, -1.75f - (i * 0.5f), 0);
         }
 
         for (int i = 0; i < lengthOfAllResources; i++)
@@ -172,6 +176,7 @@ public class PlanetScript : MonoBehaviour
         if(currentlyClicked)
         {
             uiManager.UpdateInfoBox(transform.GetComponent<PlanetScript>(), transform.position);
+            uiManager.ShowTab(0);
         }
         else
         {

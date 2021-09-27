@@ -4,15 +4,24 @@ using UnityEngine;
 
 public class CameraScript : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    bool firstClick;
+    Vector3 startingClick;
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        
+        /*if (Input.GetMouseButton(0))
+        {
+            if (firstClick)
+            {
+                print("firstclick");
+                firstClick = false;
+                startingClick = Input.mousePosition / 100;
+            }
+            transform.position = Input.mousePosition / 100;
+        }
+        if (Input.GetMouseButtonUp(0))
+        {
+            firstClick = true;
+        }*/
     }
 }
