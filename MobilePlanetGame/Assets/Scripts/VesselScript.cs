@@ -5,9 +5,43 @@ using UnityEngine;
 public class VesselScript : MonoBehaviour
 {
     [SerializeField] private float speed;
+    private float t = 0;
+    private bool firstDelivery;
 
-    public void MoveToPlanet(Vector3 _planetPos, Vector3 _previousPlanet)
+    private GameObject previousPlanet;
+    private GameObject planetHeadingTo;
+    private GameObject planetHeadingFrom;
+
+    private PlanetScript.ERESOURCES resource;
+    private int resourceAmount;
+
+    public void MoveToPlanet(GameObject _planetPos, GameObject _previousPlanetPos, PlanetScript.ERESOURCES _resource, int _resourceAmount)
     {
+        planetHeadingTo = _planetPos;
+        previousPlanet = _previousPlanetPos;
+        resource = _resource;
+        resourceAmount = _resourceAmount;
 
+        firstDelivery = true;
+    }
+
+    private void Update()
+    {
+        t += speed * Time.deltaTime;
+
+        transform.position = Vector3.Lerp(planetHeadingFrom.transform.position, planetHeadingTo.transform.position, t);
+
+        if(t > 1)
+        {
+            if (firstDelivery)
+            {
+                firstDelivery = false;
+
+                planetHeadingTo.GetComponent<PlanetScript>().GainResourceExternal(resource, resourceAmount);
+
+                //planetHeadingTo = previousPlanet;
+                Destroy(gameObject);
+            }
+        }
     }
 }

@@ -23,12 +23,13 @@ public class PlanetScript : MonoBehaviour
         //basic info
         public string name;
         public Sprite sprite;
+        public int planetNum;
 
         //production variables
         public ERESOURCES[] productionResources;
         public float[] productionTime;
         public float[] productionGain;
-        public float[] productionMax;
+        [NonSerialized] public float[] resourceMax = { 120, 70, 100, 100, 100, 100, 100, 100 };
 
         //level variables
         [NonSerialized] public int level = 0;
@@ -95,6 +96,12 @@ public class PlanetScript : MonoBehaviour
             planetInfo.resourceValues.Add(0);
         }
 
+        //debug check
+        if(planetInfo.resourceMax.Length != lengthOfAllResources)
+        {
+            Debug.LogError("resourceMax isn't the same length as the amount of resources");
+        }
+
         UpdateProductionText();
     }
 
@@ -108,20 +115,40 @@ public class PlanetScript : MonoBehaviour
             {
                 planetInfo.time[i] = planetInfo.productionTime[i];
 
-                if (planetInfo.resourceValues[ResourceNum(i)] + planetInfo.productionGain[i] <= planetInfo.productionMax[i])
-                {
-                    Vector2 pos = new Vector2(
-                        transform.position.x + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand),
-                        transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));
-                    GameObject textObj = Instantiate(collectedTextPrefab, pos, Quaternion.identity);
-                    textObj.GetComponent<TextMesh>().text = "+" + planetInfo.productionGain[i];
-                    textObj.transform.GetChild(0).localPosition = new Vector2(4 + (planetInfo.productionGain[i].ToString().Length * 1.2f), 0);
-                    Destroy(textObj, collectedDestroy);
-
-                    planetInfo.resourceValues[ResourceNum(i)] += planetInfo.productionGain[i];
-                    UpdateProductionText();
-                }
+                GainResource(i);
             }
+        }
+    }
+
+    void GainResource(int _i)
+    {
+        if (planetInfo.resourceValues[ResourceNum(_i)] + planetInfo.productionGain[_i] <= planetInfo.resourceMax[_i])
+        {
+            Vector2 pos = new Vector2(
+                transform.position.x + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand),
+                transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));
+            GameObject textObj = Instantiate(collectedTextPrefab, pos, Quaternion.identity);
+            textObj.GetComponent<TextMesh>().text = "+" + planetInfo.productionGain[_i];
+            textObj.transform.GetChild(0).localPosition = new Vector2(4 + (planetInfo.productionGain[_i].ToString().Length * 1.2f), 0);
+            Destroy(textObj, collectedDestroy);
+
+            planetInfo.resourceValues[ResourceNum(_i)] += planetInfo.productionGain[_i];
+            UpdateProductionText();
+        }
+    }
+
+    public bool GainResourceExternal(ERESOURCES _resource, int _amount)
+    {
+        if (planetInfo.resourceValues[(int)_resource] + _amount <= planetInfo.resourceMax[(int)_resource])
+        {
+            //do gain here
+            planetInfo.resourceValues[(int)_resource] += _amount;
+            UpdateProductionText();
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 
@@ -135,7 +162,7 @@ public class PlanetScript : MonoBehaviour
         for (int i = 0; i < lengthOfProdRes; i++)
         {
             productionText[i].text = "" + planetInfo.productionResources[i].ToString() + ": " +
-                planetInfo.resourceValues[ResourceNum(i)] + "/" + planetInfo.productionMax[i] + " +" + planetInfo.productionTime[i] + "/s";
+                planetInfo.resourceValues[ResourceNum(i)] + "/" + planetInfo.resourceMax[ResourceNum(i)] + " +" + planetInfo.productionTime[i] + "/s";
         }
     }
 
@@ -155,7 +182,7 @@ public class PlanetScript : MonoBehaviour
 
         for (int i = 0; i < lengthOfProdRes; i++)
         {
-            planetInfo.productionMax[i] += upgradeReq.upStorAmount[i];
+            planetInfo.resourceMax[ResourceNum(i)] += upgradeReq.upStorAmount[i];
         }
         UpdateProductionText();
     }

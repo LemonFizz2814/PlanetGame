@@ -7,23 +7,28 @@ using TMPro;
 
 public class UIManager : MonoBehaviour
 {
-    [SerializeField] private GameObject infoBox;
-    [SerializeField] private GameObject cameraObj;
-
     [SerializeField] private TextMeshProUGUI productionReqText;
     [SerializeField] private TextMeshProUGUI storageReqText;
 
+    [SerializeField] private GameObject infoBox;
+    [SerializeField] private GameObject cameraObj;
     [SerializeField] private GameObject resourceContent;
     [SerializeField] private GameObject resourceText;
+    [SerializeField] private GameObject resourceDeliveryScreen;
+    [SerializeField] private GameObject resourceDeliveryContent;
+    [SerializeField] private GameObject planetDeliveryButton;
+
     [SerializeField] private GameObject[] tabObjects;
 
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
 
     PlanetScript selectedPlanet;
+    TransportManager transportManager;
 
     private void Start()
     {
         SetActiveInfoBox(false);
+        resourceDeliveryScreen.SetActive(false);
     }
 
     public void SetActiveInfoBox(bool _active)
@@ -53,15 +58,16 @@ public class UIManager : MonoBehaviour
         {
             GameObject resourceTextObj = Instantiate(resourceText, new Vector3(0, 0, 0), Quaternion.identity);
             resourceTextObj.transform.SetParent(resourceContent.transform);
-            resourceTextObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(-25, -20 - (40 * i));
-            resourceTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(320, 40);
+            resourceTextObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(-10, -20 - (35 * i));
+            resourceTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(200, 32);
             resourceTextObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
             resourceTextObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
+            resourceTextObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
 
             int x = i;
             resourceTextObj.transform.GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
 
-            resourceTextObj.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + 100;
+            resourceTextObj.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + selectedPlanet.GetPlanetInfo().resourceMax[i];
         }
 
         resourceContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40 * Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length);
@@ -90,5 +96,48 @@ public class UIManager : MonoBehaviour
     public void TransferPressed(PlanetScript.ERESOURCES _resource)
     {
         print("transferring " + _resource.ToString());
+        resourceDeliveryScreen.SetActive(true);
+
+        //clear old content
+        foreach (Transform child in resourceDeliveryContent.transform)
+        {
+            Destroy(child.gameObject);
+        }
+
+        for (int i = 0; i < transportManager.GetUnlockedPlanetObjects().Length; i++)
+        {
+            GameObject planetDeliverObj = Instantiate(planetDeliveryButton, new Vector3(0, 0, 0), Quaternion.identity);
+            planetDeliverObj.transform.SetParent(resourceDeliveryContent.transform);
+            planetDeliverObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(3, -30 - (50 * i));
+            planetDeliverObj.GetComponent<RectTransform>().sizeDelta = new Vector2(260, 50);
+            planetDeliverObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
+            planetDeliverObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
+            planetDeliverObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
+
+            int x = i;
+            planetDeliverObj.transform.GetComponent<Button>().onClick.AddListener(delegate { PlanetDeliveryPressed(x, _resource); });
+
+            planetDeliverObj.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "" + ((i != selectedPlanet.GetPlanetInfo().planetNum)? transportManager.GetUnlockedPlanetObjects()[i].GetPlanetInfo().name : "-------");
+            planetDeliverObj.transform.GetChild(0).GetComponent<Image>().sprite = selectedPlanet.GetPlanetInfo().sprite;
+        }
+
+        resourceDeliveryContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 50 * transportManager.GetUnlockedPlanetObjects().Length);
+    }
+
+    public void PlanetDeliveryPressed(int _planet, PlanetScript.ERESOURCES _resource)
+    {
+        print("planet selected " + _planet);
+        transportManager.SpawnTransport(
+            transportManager.GetPlanetObjects()[_planet].gameObject,
+            transportManager.GetPlanetObjects()[selectedPlanet.GetPlanetInfo().planetNum].gameObject,
+            _resource,
+            (int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
+
+        selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
+    }
+
+    public void CancelResourceDelivery()
+    {
+        resourceDeliveryScreen.SetActive(false);
     }
 }
