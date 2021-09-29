@@ -8,7 +8,6 @@ public class VesselScript : MonoBehaviour
     private float t = 0;
     private bool firstDelivery;
 
-    private GameObject previousPlanet;
     private GameObject planetHeadingTo;
     private GameObject planetHeadingFrom;
 
@@ -18,7 +17,7 @@ public class VesselScript : MonoBehaviour
     public void MoveToPlanet(GameObject _planetPos, GameObject _previousPlanetPos, PlanetScript.ERESOURCES _resource, int _resourceAmount)
     {
         planetHeadingTo = _planetPos;
-        previousPlanet = _previousPlanetPos;
+        planetHeadingFrom = _previousPlanetPos;
         resource = _resource;
         resourceAmount = _resourceAmount;
 

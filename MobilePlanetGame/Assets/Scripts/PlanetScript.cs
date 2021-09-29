@@ -29,7 +29,8 @@ public class PlanetScript : MonoBehaviour
         public ERESOURCES[] productionResources;
         public float[] productionTime;
         public float[] productionGain;
-        [NonSerialized] public float[] resourceMax = { 120, 70, 100, 100, 100, 100, 100, 100 };
+        public float[] productionMax;
+        [NonSerialized] public float[] resourceMax = { 120, 72, 100, 100, 100, 100, 100, 100 }; //set on very first start
 
         //level variables
         [NonSerialized] public int level = 0;
@@ -89,6 +90,8 @@ public class PlanetScript : MonoBehaviour
             productionText.Add(productionTextObj.GetComponent<TextMesh>());
             productionTextObj.transform.SetParent(productionTextsParent);
             productionTextObj.transform.localPosition = new Vector3(0, -1.75f - (i * 0.5f), 0);
+
+            planetInfo.resourceMax[ResourceNum(i)] *= ((planetInfo.productionMax[i] + 100) * 0.01f);
         }
 
         for (int i = 0; i < lengthOfAllResources; i++)
@@ -115,26 +118,32 @@ public class PlanetScript : MonoBehaviour
             {
                 planetInfo.time[i] = planetInfo.productionTime[i];
 
-                GainResource(i);
+                if (planetInfo.resourceValues[ResourceNum(i)] + planetInfo.productionGain[i] <= planetInfo.resourceMax[ResourceNum(i)])
+                {
+                    GainResource(i, planetInfo.productionGain[i]);
+                }
+                else
+                {
+                    GainResource(i, planetInfo.resourceMax[ResourceNum(i)] - planetInfo.resourceValues[ResourceNum(i)]);
+                }
             }
         }
     }
 
-    void GainResource(int _i)
+    void GainResource(int _i, float _gain)
     {
-        if (planetInfo.resourceValues[ResourceNum(_i)] + planetInfo.productionGain[_i] <= planetInfo.resourceMax[_i])
-        {
-            Vector2 pos = new Vector2(
-                transform.position.x + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand),
-                transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));
-            GameObject textObj = Instantiate(collectedTextPrefab, pos, Quaternion.identity);
-            textObj.GetComponent<TextMesh>().text = "+" + planetInfo.productionGain[_i];
-            textObj.transform.GetChild(0).localPosition = new Vector2(4 + (planetInfo.productionGain[_i].ToString().Length * 1.2f), 0);
-            Destroy(textObj, collectedDestroy);
+        Vector2 pos = new Vector2(
+            transform.position.x + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand),
+            transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));
+        GameObject textObj = Instantiate(collectedTextPrefab, pos, Quaternion.identity);
+        textObj.GetComponent<TextMesh>().text = "+" + _gain;
+        textObj.transform.GetChild(0).localPosition = new Vector3(4 + (planetInfo.productionGain[_i].ToString().Length * 1.2f), 0, -1);
+        textObj.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = uiManager.GetResourceIcon()[ResourceNum(_i)];
 
-            planetInfo.resourceValues[ResourceNum(_i)] += planetInfo.productionGain[_i];
-            UpdateProductionText();
-        }
+        Destroy(textObj, collectedDestroy);
+
+        planetInfo.resourceValues[ResourceNum(_i)] += _gain;
+        UpdateProductionText();
     }
 
     public bool GainResourceExternal(ERESOURCES _resource, int _amount)
@@ -207,7 +216,7 @@ public class PlanetScript : MonoBehaviour
         }
         else
         {
-            uiManager.SetActiveInfoBox(false);
+            //uiManager.SetActiveInfoBox(false);
         }
     }
 }

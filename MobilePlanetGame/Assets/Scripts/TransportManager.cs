@@ -27,7 +27,10 @@ public class TransportManager : MonoBehaviour
 
     public void SpawnTransport(GameObject _planet, GameObject _previousPlanet, PlanetScript.ERESOURCES _resource, int _resourceAmount)
     {
-        GameObject vesselObj = Instantiate(transportVessel, _planet.transform.position, Quaternion.identity);
-        vesselObj.GetComponent<VesselScript>().MoveToPlanet(_planet, _previousPlanet, _resource, _resourceAmount);
+        if (GameObject.FindGameObjectsWithTag("Vessel").Length <= maxAmountOfTransports)
+        {
+            GameObject vesselObj = Instantiate(transportVessel, _planet.transform.position, Quaternion.identity);
+            vesselObj.GetComponent<VesselScript>().MoveToPlanet(_planet, _previousPlanet, _resource, _resourceAmount);
+        }
     }
 }

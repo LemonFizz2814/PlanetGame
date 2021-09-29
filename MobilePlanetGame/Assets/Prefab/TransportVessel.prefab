@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 666327269522398645}
   m_Layer: 0
   m_Name: TransportVessel
-  m_TagString: Untagged
+  m_TagString: Vessel
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -25,7 +25,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 666327269522398647}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.07, y: 2.44, z: 0}
+  m_LocalPosition: {x: -4.07, y: 2.44, z: -1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 666327270337586716}
@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e0761da9bfbfca4bb7e672e58d42b63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 1
+  speed: 0.2
 --- !u!1 &666327270337586717
 GameObject:
   m_ObjectHideFlags: 0

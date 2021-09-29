@@ -10,6 +10,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI productionReqText;
     [SerializeField] private TextMeshProUGUI storageReqText;
 
+    [SerializeField] private TransportManager transportManager;
+
     [SerializeField] private GameObject infoBox;
     [SerializeField] private GameObject cameraObj;
     [SerializeField] private GameObject resourceContent;
@@ -20,15 +22,22 @@ public class UIManager : MonoBehaviour
 
     [SerializeField] private GameObject[] tabObjects;
 
+    [SerializeField] private Sprite[] resourceIcons;
+
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
 
     PlanetScript selectedPlanet;
-    TransportManager transportManager;
 
     private void Start()
     {
         SetActiveInfoBox(false);
         resourceDeliveryScreen.SetActive(false);
+
+        //debug check
+        if(resourceIcons.Length != Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length)
+        {
+            Debug.LogError("resourceIcons length not same as ERESOURCES");
+        }
     }
 
     public void SetActiveInfoBox(bool _active)
@@ -64,6 +73,8 @@ public class UIManager : MonoBehaviour
             resourceTextObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
             resourceTextObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
 
+            resourceTextObj.transform.GetChild(0).GetComponent<Image>().sprite = resourceIcons[i];
+
             int x = i;
             resourceTextObj.transform.GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
 
@@ -81,6 +92,11 @@ public class UIManager : MonoBehaviour
     public void UpgradeStorageButtonPressed()
     {
         selectedPlanet.UpgradeStorage();
+    }
+
+    public Sprite[] GetResourceIcon()
+    {
+        return resourceIcons;
     }
 
     public void ShowTab(int _i)
@@ -118,10 +134,10 @@ public class UIManager : MonoBehaviour
             planetDeliverObj.transform.GetComponent<Button>().onClick.AddListener(delegate { PlanetDeliveryPressed(x, _resource); });
 
             planetDeliverObj.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "" + ((i != selectedPlanet.GetPlanetInfo().planetNum)? transportManager.GetUnlockedPlanetObjects()[i].GetPlanetInfo().name : "-------");
-            planetDeliverObj.transform.GetChild(0).GetComponent<Image>().sprite = selectedPlanet.GetPlanetInfo().sprite;
+            planetDeliverObj.transform.GetChild(0).GetComponent<Image>().sprite = transportManager.GetUnlockedPlanetObjects()[i].GetPlanetInfo().sprite;
         }
 
-        resourceDeliveryContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 50 * transportManager.GetUnlockedPlanetObjects().Length);
+        resourceDeliveryContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, (50 * transportManager.GetUnlockedPlanetObjects().Length) + 5);
     }
 
     public void PlanetDeliveryPressed(int _planet, PlanetScript.ERESOURCES _resource)
