@@ -11,6 +11,8 @@ public class TransportManager : MonoBehaviour
 
     [SerializeField] private int maxAmountOfTransports;
 
+    [SerializeField] private int upgradeAmount;
+
     private void Start()
     {
         unlockedPlanetObjects = planetObjects;

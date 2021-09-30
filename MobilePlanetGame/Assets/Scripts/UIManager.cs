@@ -9,6 +9,7 @@ public class UIManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI productionReqText;
     [SerializeField] private TextMeshProUGUI storageReqText;
+    [SerializeField] private TextMeshProUGUI descriptionText;
 
     [SerializeField] private TransportManager transportManager;
 
@@ -26,7 +27,7 @@ public class UIManager : MonoBehaviour
 
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
 
-    PlanetScript selectedPlanet;
+    private PlanetScript selectedPlanet;
 
     private void Start()
     {
@@ -45,6 +46,12 @@ public class UIManager : MonoBehaviour
         infoBox.SetActive(_active);
     }
 
+    public void ClosePressed()
+    {
+        SetActiveInfoBox(false);
+        selectedPlanet.ClickedOn();
+    }
+
     public void UpdateInfoBox(PlanetScript _planetScript, Vector3 _pos)
     {
         SetActiveInfoBox(true);
@@ -52,18 +59,19 @@ public class UIManager : MonoBehaviour
         selectedPlanet = _planetScript;
         cameraObj.transform.position = _pos;
 
-        int levelTier = selectedPlanet.GetPlanetInfo().levelTier;
+        int levelTier = selectedPlanet.GetLevelTier();
 
         productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTier];
         storageReqText.text = selectedPlanet.GetUpgradeRequirements().upStorResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTier];
+        descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
 
         //clear old content
-        foreach(Transform child in resourceContent.transform)
+        foreach (Transform child in resourceContent.transform)
         {
             Destroy(child.gameObject);
         }
 
-        for(int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
+        for (int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
         {
             GameObject resourceTextObj = Instantiate(resourceText, new Vector3(0, 0, 0), Quaternion.identity);
             resourceTextObj.transform.SetParent(resourceContent.transform);
@@ -82,6 +90,14 @@ public class UIManager : MonoBehaviour
         }
 
         resourceContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40 * Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length);
+    }
+
+    public void UpdateResourcesTab()
+    {
+        for(int i = 0; i < resourceContent.transform.childCount; i++)
+        {
+            resourceContent.transform.GetChild(i).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + selectedPlanet.GetPlanetInfo().resourceMax[i];
+        }
     }
 
     public void UpgradeProductionButtonPressed()
@@ -150,6 +166,8 @@ public class UIManager : MonoBehaviour
             (int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
 
         selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
+
+        resourceDeliveryScreen.SetActive(false);
     }
 
     public void CancelResourceDelivery()
