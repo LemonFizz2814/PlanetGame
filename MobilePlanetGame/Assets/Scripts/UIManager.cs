@@ -117,6 +117,11 @@ public class UIManager : MonoBehaviour
 
     public void ShowTab(int _i)
     {
+        if(selectedPlanet.GetSpaceStationInfo().isSpaceStation)
+        {
+            _i = 3;
+        }
+
         for(int i = 0; i < tabObjects.Length; i++)
         {
             tabObjects[i].SetActive(false);
@@ -154,6 +159,11 @@ public class UIManager : MonoBehaviour
         }
 
         resourceDeliveryContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, (50 * transportManager.GetUnlockedPlanetObjects().Length) + 5);
+    }
+
+    public void DoubleSpeedPressed(float _time)
+    {
+        selectedPlanet.SetDoubleSpeed(_time);
     }
 
     public void PlanetDeliveryPressed(int _planet, PlanetScript.ERESOURCES _resource)

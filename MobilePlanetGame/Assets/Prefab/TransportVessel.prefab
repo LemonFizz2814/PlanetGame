@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 0.2
+  dottedLine: {fileID: 6117725429435782183, guid: 9b84ca88092a19f42b2a5377bc1c804b, type: 3}
 --- !u!1 &666327270337586717
 GameObject:
   m_ObjectHideFlags: 0

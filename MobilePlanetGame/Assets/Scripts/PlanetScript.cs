@@ -23,8 +23,11 @@ public class PlanetScript : MonoBehaviour
         //basic info
         public string name;
         public Sprite sprite;
+        public Sprite dullSprite;
         public int planetNum;
         public bool hasBeenUnlocked;
+        public bool isDoubleSpeed;
+        [NonSerialized] public float doubleSpeedTime;
 
         //production variables
         public ERESOURCES[] productionResources;
@@ -48,13 +51,24 @@ public class PlanetScript : MonoBehaviour
     {
         public ERESOURCES[] upProdResource;
         public int[] upProdAmount;
+        public int[] upProdIncrease;
         public ERESOURCES[] upStorResource;
         public int[] upStorAmount;
+        public int[] upStorIncrease;
         [NonSerialized] public int maxUpgrades;
+    };
+
+    [Serializable]
+    public class SpaceStationInfo
+    {
+        public bool isSpaceStation;
+        public int attackCraftAmount;
+        public int attackCraftMax;
     };
 
     [SerializeField] private PlanetInfo planetInfo;
     [SerializeField] private UpgradeRequirements upgradeReq;
+    [SerializeField] private SpaceStationInfo spaceStationInfo;
     [SerializeField] private TextMesh nameText;
     [SerializeField] private GameObject collectedTextPrefab;
     [SerializeField] private GameObject productionTextPrefab;
@@ -69,7 +83,8 @@ public class PlanetScript : MonoBehaviour
 
     private int lengthOfAllResources;
     private int lengthOfProdRes;
-    private int levelUp = 5;
+    private int levelUpAmount = 5;
+    private int levelUpDoubleSpeedTime = 10;
 
     private bool currentlyClicked = false;
 
@@ -83,7 +98,7 @@ public class PlanetScript : MonoBehaviour
         upgradeReq.maxUpgrades = upgradeReq.upProdResource.Length;
 
         nameText.text = planetInfo.name;
-        GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
+        GetComponent<SpriteRenderer>().sprite = (planetInfo.hasBeenUnlocked)? planetInfo.sprite : planetInfo.dullSprite;
 
         for (int i = 0; i < lengthOfProdRes; i++)
         {
@@ -121,6 +136,11 @@ public class PlanetScript : MonoBehaviour
             {
                 planetInfo.time[i] = planetInfo.productionTime[i];
 
+                if(planetInfo.isDoubleSpeed)
+                {
+                    planetInfo.time[i] /= 2;
+                }
+
                 if (planetInfo.resourceValues[ResourceNum(i)] + planetInfo.productionGain[i] <= planetInfo.resourceMax[ResourceNum(i)])
                 {
                     GainResource(i, planetInfo.productionGain[i]);
@@ -132,6 +152,24 @@ public class PlanetScript : MonoBehaviour
                 }
             }
         }
+
+        if(planetInfo.isDoubleSpeed)
+        {
+            planetInfo.doubleSpeedTime -= Time.deltaTime;
+
+            if(planetInfo.doubleSpeedTime < 0)
+            {
+                planetInfo.isDoubleSpeed = false;
+                print("double speed ended");
+            }
+        }
+    }
+
+    public void SetDoubleSpeed(float _time)
+    {
+        print("double speed set to " + _time);
+        planetInfo.isDoubleSpeed = true;
+        planetInfo.doubleSpeedTime = _time;
     }
 
     void GainResource(int _i, float _gain)
@@ -161,11 +199,6 @@ public class PlanetScript : MonoBehaviour
             SpawnCollectedText((int)_resource, _amount);
             planetInfo.resourceValues[(int)_resource] += _amount;
             UpdateProductionText();
-
-            if (currentlyClicked)
-            {
-                uiManager.UpdateResourcesTab();
-            }
             return true;
         }
         else
@@ -186,42 +219,49 @@ public class PlanetScript : MonoBehaviour
             productionText[i].text = "" + planetInfo.productionResources[i].ToString() + ": " +
                 planetInfo.resourceValues[ResourceNum(i)] + "/" + planetInfo.resourceMax[ResourceNum(i)] + " +" + planetInfo.productionTime[i] + "/s";
         }
+
+        if (currentlyClicked)
+        {
+            uiManager.UpdateResourcesTab();
+        }
     }
 
     public void UpgradeProduction()
     {
-        planetInfo.level++;
+        IncreaseLevel(1);
+
+        planetInfo.resourceValues[(int)upgradeReq.upProdResource[GetLevelTier()]] -= upgradeReq.upProdAmount[GetLevelTier()];
 
         for (int i = 0; i < lengthOfProdRes; i++)
         {
-            planetInfo.productionGain[i] += upgradeReq.upProdAmount[GetLevelTier()];
+            planetInfo.productionGain[i] += upgradeReq.upProdIncrease[GetLevelTier()];
         }
         UpdateProductionText();
-
-        if (currentlyClicked)
-        {
-            uiManager.UpdateResourcesTab();
-        }
     }
     public void UpgradeStorage()
     {
-        planetInfo.level++;
+        IncreaseLevel(1);
 
         for (int i = 0; i < lengthOfProdRes; i++)
         {
-            planetInfo.resourceMax[ResourceNum(i)] += upgradeReq.upStorAmount[GetLevelTier()];
+            planetInfo.resourceMax[ResourceNum(i)] += upgradeReq.upStorIncrease[GetLevelTier()];
         }
         UpdateProductionText();
+    }
 
-        if (currentlyClicked)
+    public void IncreaseLevel(int _i)
+    {
+        planetInfo.level += _i;
+
+        if(planetInfo.level % levelUpAmount == 0)
         {
-            uiManager.UpdateResourcesTab();
+            SetDoubleSpeed(levelUpDoubleSpeedTime);
         }
     }
 
     public int GetLevelTier()
     {
-        return (int)Mathf.Floor(planetInfo.level / levelUp);
+        return (int)Mathf.Floor(planetInfo.level / levelUpAmount);
     }
 
     public UpgradeRequirements GetUpgradeRequirements()
@@ -232,10 +272,17 @@ public class PlanetScript : MonoBehaviour
     {
         return planetInfo;
     }
+    public SpaceStationInfo GetSpaceStationInfo()
+    {
+        return spaceStationInfo;
+    }
 
     void OnMouseDown()
     {
-        ClickedOn();
+        if (!currentlyClicked)
+        {
+            ClickedOn();
+        }
     }
 
     public void ClickedOn()

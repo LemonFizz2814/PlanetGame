@@ -11,7 +11,7 @@ public class TransportManager : MonoBehaviour
 
     [SerializeField] private int maxAmountOfTransports;
 
-    [SerializeField] private int upgradeAmount;
+    [SerializeField] private float transportSpeed;
 
     private void Start()
     {
@@ -32,7 +32,7 @@ public class TransportManager : MonoBehaviour
         if (GameObject.FindGameObjectsWithTag("Vessel").Length <= maxAmountOfTransports)
         {
             GameObject vesselObj = Instantiate(transportVessel, _planet.transform.position, Quaternion.identity);
-            vesselObj.GetComponent<VesselScript>().MoveToPlanet(_planet, _previousPlanet, _resource, _resourceAmount);
+            vesselObj.GetComponent<VesselScript>().MoveToPlanet(_planet, _previousPlanet, _resource, _resourceAmount, transportSpeed);
         }
     }
 }
