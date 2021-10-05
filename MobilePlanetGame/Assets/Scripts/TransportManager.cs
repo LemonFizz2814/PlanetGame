@@ -27,6 +27,16 @@ public class TransportManager : MonoBehaviour
         return unlockedPlanetObjects;
     }
 
+    public void UpgradeMaxTransport(int _i)
+    {
+        maxAmountOfTransports += _i;
+    }
+
+    public void UpgradeTransportSpeed(int _i)
+    {
+        transportSpeed += _i;
+    }
+
     public void SpawnTransport(GameObject _planet, GameObject _previousPlanet, PlanetScript.ERESOURCES _resource, int _resourceAmount)
     {
         if (GameObject.FindGameObjectsWithTag("Vessel").Length <= maxAmountOfTransports)

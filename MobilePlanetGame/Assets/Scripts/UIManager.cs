@@ -103,11 +103,19 @@ public class UIManager : MonoBehaviour
     public void UpgradeProductionButtonPressed()
     {
         selectedPlanet.UpgradeProduction();
-        //UPDATE INFO BOX 
     }
     public void UpgradeStorageButtonPressed()
     {
         selectedPlanet.UpgradeStorage();
+    }
+
+    public void UpgradeMaxTransportPressed()
+    {
+
+    }
+    public void UpgradeTransportSpeedPressed()
+    {
+
     }
 
     public Sprite[] GetResourceIcon()
