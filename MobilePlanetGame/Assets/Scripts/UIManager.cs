@@ -10,6 +10,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI productionReqText;
     [SerializeField] private TextMeshProUGUI storageReqText;
     [SerializeField] private TextMeshProUGUI descriptionText;
+    [SerializeField] private TextMeshProUGUI unitsText;
 
     [SerializeField] private TransportManager transportManager;
 
@@ -61,6 +62,8 @@ public class UIManager : MonoBehaviour
 
         int levelTier = selectedPlanet.GetLevelTier();
 
+        UpdateUnitsText();
+
         productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTier];
         storageReqText.text = selectedPlanet.GetUpgradeRequirements().upStorResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTier];
         descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
@@ -111,11 +114,24 @@ public class UIManager : MonoBehaviour
 
     public void UpgradeMaxTransportPressed()
     {
-
+        //update values -----------
+        transportManager.UpgradeMaxTransport(1);
     }
     public void UpgradeTransportSpeedPressed()
     {
+        //update values -----------
+        transportManager.UpgradeTransportSpeed(1);
+    }
 
+    public void PurchaseUnitsPressed()
+    {
+        selectedPlanet.UnitPurchased();
+        UpdateUnitsText();
+    }
+
+    public void UpdateUnitsText()
+    {
+        unitsText.text = "Units:\n" + selectedPlanet.GetSpaceStationInfo().units + "/" + selectedPlanet.GetSpaceStationInfo().unitMax;
     }
 
     public Sprite[] GetResourceIcon()

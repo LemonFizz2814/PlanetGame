@@ -62,8 +62,11 @@ public class PlanetScript : MonoBehaviour
     public class SpaceStationInfo
     {
         public bool isSpaceStation;
-        public int attackCraftAmount;
-        public int attackCraftMax;
+        public int unitGain;
+        public int unitMax;
+        public ERESOURCES[] upProdResource;
+        public int[] unitUpAmount;
+        public int units;
     };
 
     [SerializeField] private PlanetInfo planetInfo;
@@ -228,25 +231,56 @@ public class PlanetScript : MonoBehaviour
 
     public void UpgradeProduction()
     {
-        IncreaseLevel(1);
-
-        planetInfo.resourceValues[(int)upgradeReq.upProdResource[GetLevelTier()]] -= upgradeReq.upProdAmount[GetLevelTier()];
-
-        for (int i = 0; i < lengthOfProdRes; i++)
+        if (planetInfo.resourceValues[(int)upgradeReq.upProdResource[GetLevelTier()]] >= upgradeReq.upProdAmount[GetLevelTier()])
         {
-            planetInfo.productionGain[i] += upgradeReq.upProdIncrease[GetLevelTier()];
+            IncreaseLevel(1);
+
+            planetInfo.resourceValues[(int)upgradeReq.upProdResource[GetLevelTier()]] -= upgradeReq.upProdAmount[GetLevelTier()];
+
+            for (int i = 0; i < lengthOfProdRes; i++)
+            {
+                planetInfo.productionGain[i] += upgradeReq.upProdIncrease[GetLevelTier()];
+            }
+            UpdateProductionText();
         }
-        UpdateProductionText();
+        else
+        {
+            print("not enough resources");
+        }
     }
     public void UpgradeStorage()
     {
-        IncreaseLevel(1);
-
-        for (int i = 0; i < lengthOfProdRes; i++)
+        if (planetInfo.resourceValues[(int)upgradeReq.upStorResource[GetLevelTier()]] >= upgradeReq.upStorAmount[GetLevelTier()])
         {
-            planetInfo.resourceMax[ResourceNum(i)] += upgradeReq.upStorIncrease[GetLevelTier()];
+            IncreaseLevel(1);
+
+            planetInfo.resourceValues[(int)upgradeReq.upStorResource[GetLevelTier()]] -= upgradeReq.upStorAmount[GetLevelTier()];
+
+            for (int i = 0; i < lengthOfProdRes; i++)
+            {
+                planetInfo.resourceMax[ResourceNum(i)] += upgradeReq.upStorIncrease[GetLevelTier()];
+            }
+            UpdateProductionText();
         }
-        UpdateProductionText();
+        else
+        {
+            print("not enough resources");
+        }
+    }
+    public void UnitPurchased()
+    {
+        if (planetInfo.resourceValues[(int)spaceStationInfo.upProdResource[GetLevelTier()]] >= spaceStationInfo.unitUpAmount[GetLevelTier()]
+            && (spaceStationInfo.units + spaceStationInfo.unitGain) <= spaceStationInfo.unitMax)
+        {
+            planetInfo.resourceValues[(int)spaceStationInfo.upProdResource[GetLevelTier()]] -= spaceStationInfo.unitUpAmount[GetLevelTier()];
+
+            spaceStationInfo.units += spaceStationInfo.unitGain;
+            uiManager.UpdateUnitsText();
+        }
+        else
+        {
+            print("not enough resources");
+        }
     }
 
     public void IncreaseLevel(int _i)
