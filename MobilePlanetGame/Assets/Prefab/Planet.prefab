@@ -175,6 +175,10 @@ MonoBehaviour:
   planetInfo:
     name: Exodus
     sprite: {fileID: 21300000, guid: 46242b4e31ec3ab498d85ac12c78da26, type: 3}
+    dullSprite: {fileID: 0}
+    planetNum: 0
+    hasBeenUnlocked: 1
+    isDoubleSpeed: 0
     productionResources: 0100000002000000
     productionTime:
     - 3
@@ -183,15 +187,25 @@ MonoBehaviour:
     - 12
     - 1
     productionMax:
-    - 60
-    - 100
+    - 0
+    - 20
+    descriptionText: 'Text Text Text Text Text Text Text '
   upgradeReq:
     upProdResource: 01000000
     upProdAmount: 14000000
+    upProdIncrease: 0a000000
     upStorResource: 02000000
     upStorAmount: 50000000
+    upStorIncrease: 0a000000
+  spaceStationInfo:
+    isSpaceStation: 0
+    unitGain: 0
+    unitMax: 0
+    upProdResource: 
+    unitUpAmount: 
+    units: 0
+  saveScript: {fileID: 0}
   nameText: {fileID: 5794203775788871609}
-  uiManager: {fileID: 0}
   collectedTextPrefab: {fileID: 6534788136387080625, guid: a659e706a8b279f4d83ec573be4a8069, type: 3}
   productionTextPrefab: {fileID: 3804773877274470262, guid: 7fdf4d8f1dc0e1c47ab1c8542fd2a79f, type: 3}
   collectedSpawnRand: 1

@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using System;
 using UnityEngine;
+using System;
 
 public class PlanetScript : MonoBehaviour
 {
@@ -72,6 +72,7 @@ public class PlanetScript : MonoBehaviour
     [SerializeField] private PlanetInfo planetInfo;
     [SerializeField] private UpgradeRequirements upgradeReq;
     [SerializeField] private SpaceStationInfo spaceStationInfo;
+    [SerializeField] private SaveScript saveScript;
     [SerializeField] private TextMesh nameText;
     [SerializeField] private GameObject collectedTextPrefab;
     [SerializeField] private GameObject productionTextPrefab;
@@ -91,8 +92,13 @@ public class PlanetScript : MonoBehaviour
 
     private bool currentlyClicked = false;
 
+    //debug variables
+    private bool debugSaveActive = false;
+
     private void Start()
     {
+        UpdateInfo();
+
         lengthOfAllResources = Enum.GetNames(typeof(ERESOURCES)).Length;
         lengthOfProdRes = planetInfo.productionResources.Length;
 
@@ -293,6 +299,22 @@ public class PlanetScript : MonoBehaviour
         }
     }
 
+    void Save()
+    {
+        if(debugSaveActive)
+        {
+            saveScript.SavePlanetInfo(planetInfo);
+        }
+    }
+
+    private void UpdateInfo()
+    {
+        if (debugSaveActive)
+        {
+            planetInfo = saveScript.GetSavedPlanetInfo(planetInfo);
+        }
+    }
+
     public int GetLevelTier()
     {
         return (int)Mathf.Floor(planetInfo.level / levelUpAmount);
@@ -327,7 +349,7 @@ public class PlanetScript : MonoBehaviour
 
             if (currentlyClicked)
             {
-                uiManager.UpdateInfoBox(transform.GetComponent<PlanetScript>(), transform.position);
+                uiManager.UpdateInfoBox(transform.GetComponent<PlanetScript>());
                 uiManager.ShowTab(0);
             }
             else
@@ -339,5 +361,10 @@ public class PlanetScript : MonoBehaviour
         {
             Debug.LogWarning("display message for planet not being unlocked");
         }
+    }
+
+    void OnApplicationQuit()
+    {
+        Save();
     }
 }

@@ -12,10 +12,12 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI unitsText;
 
+    [SerializeField] private Slider levelSlider;
+
     [SerializeField] private TransportManager transportManager;
+    [SerializeField] private CameraScript cameraScript;
 
     [SerializeField] private GameObject infoBox;
-    [SerializeField] private GameObject cameraObj;
     [SerializeField] private GameObject resourceContent;
     [SerializeField] private GameObject resourceText;
     [SerializeField] private GameObject resourceDeliveryScreen;
@@ -51,14 +53,18 @@ public class UIManager : MonoBehaviour
     {
         SetActiveInfoBox(false);
         selectedPlanet.ClickedOn();
+        cameraScript.SetCanMove(true);
     }
 
-    public void UpdateInfoBox(PlanetScript _planetScript, Vector3 _pos)
+    public void UpdateInfoBox(PlanetScript _planetScript)
     {
+        cameraScript.SetCanMove(false);
+
         SetActiveInfoBox(true);
 
         selectedPlanet = _planetScript;
-        cameraObj.transform.position = _pos;
+        cameraScript.MoveCamera(new Vector3(selectedPlanet.transform.position.x, selectedPlanet.transform.position.y, -10));
+        cameraScript.SetCamZoom(cameraScript.GetStartingZoom());
 
         int levelTier = selectedPlanet.GetLevelTier();
 
@@ -67,6 +73,8 @@ public class UIManager : MonoBehaviour
         productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTier];
         storageReqText.text = selectedPlanet.GetUpgradeRequirements().upStorResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTier];
         descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
+
+        levelSlider.value = selectedPlanet.GetPlanetInfo().level % 5;
 
         //clear old content
         foreach (Transform child in resourceContent.transform)
