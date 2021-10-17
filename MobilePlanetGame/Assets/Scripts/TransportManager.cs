@@ -26,6 +26,10 @@ public class TransportManager : MonoBehaviour
     {
         return unlockedPlanetObjects;
     }
+    public PlanetScript[] GetLockedPlanetObjects()
+    {
+        return unlockedPlanetObjects;
+    }
 
     public void UpgradeMaxTransport(int _i)
     {

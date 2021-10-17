@@ -8,13 +8,15 @@ public class PlanetScript : MonoBehaviour
     public enum ERESOURCES
     {
         Water,
-        Nitrogen,
-        Uranium,
+        Timber,
         Sulphur,
-        Coal,
-        Iron,
+        Copper,
+        Oil,
+        Uranium,
+        Nitrogen,
         Gold,
-        Slime,
+        Cosmic_Quartz,
+        Space_Dust,
     };
 
     [Serializable]
@@ -34,7 +36,7 @@ public class PlanetScript : MonoBehaviour
         public float[] productionTime;
         public float[] productionGain;
         public float[] productionMax;
-        [NonSerialized] public float[] resourceMax = { 120, 72, 100, 100, 100, 100, 100, 100 }; //set on very first start
+        [NonSerialized] public float[] resourceMax = { 120, 72, 100, 100, 100, 100, 100, 100, 100, 100 }; //set on very first start
 
         //level variables
         [NonSerialized] public int level = 0;
@@ -42,6 +44,10 @@ public class PlanetScript : MonoBehaviour
         //lists
         [NonSerialized] public List<float> resourceValues = new List<float>();
         [NonSerialized] public List<float> time = new List<float>();
+
+        //defense
+        [NonSerialized] public int defensePoints;
+        public int defenseMax;
 
         [TextArea(8, 10)] public string descriptionText;
     };
@@ -64,9 +70,10 @@ public class PlanetScript : MonoBehaviour
         public bool isSpaceStation;
         public int unitGain;
         public int unitMax;
-        public ERESOURCES[] upProdResource;
-        public int[] unitUpAmount;
-        public int units;
+        public int unitMaxIncrease;
+        public ERESOURCES[] unitBuyResource;
+        public int[] unitBuyAmount;
+        [NonSerialized] public int units;
     };
 
     [SerializeField] private PlanetInfo planetInfo;
@@ -74,6 +81,7 @@ public class PlanetScript : MonoBehaviour
     [SerializeField] private SpaceStationInfo spaceStationInfo;
     [SerializeField] private SaveScript saveScript;
     [SerializeField] private TextMesh nameText;
+    [SerializeField] private TextMesh defensePointsText;
     [SerializeField] private GameObject collectedTextPrefab;
     [SerializeField] private GameObject productionTextPrefab;
     private UIManager uiManager;
@@ -109,6 +117,8 @@ public class PlanetScript : MonoBehaviour
         nameText.text = planetInfo.name;
         GetComponent<SpriteRenderer>().sprite = (planetInfo.hasBeenUnlocked)? planetInfo.sprite : planetInfo.dullSprite;
 
+        GetPlanetInfo().defensePoints = GetPlanetInfo().defenseMax;
+
         for (int i = 0; i < lengthOfProdRes; i++)
         {
             planetInfo.time.Add(planetInfo.productionTime[i]);
@@ -118,7 +128,9 @@ public class PlanetScript : MonoBehaviour
             productionTextObj.transform.SetParent(productionTextsParent);
             productionTextObj.transform.localPosition = new Vector3(0, -1.75f - (i * 0.5f), 0);
 
-            planetInfo.resourceMax[ResourceNum(i)] *= ((planetInfo.productionMax[i] + 100) * 0.01f);
+            //set resource max
+            //planetInfo.resourceMax[ResourceNum(i)] *= ((planetInfo.productionMax[i] + 100) * 0.01f);
+            planetInfo.resourceMax[ResourceNum(i)] = planetInfo.productionMax[i];
         }
 
         for (int i = 0; i < lengthOfAllResources; i++)
@@ -129,47 +141,51 @@ public class PlanetScript : MonoBehaviour
         //debug check
         if(planetInfo.resourceMax.Length != lengthOfAllResources)
         {
-            Debug.LogError("resourceMax isn't the same length as the amount of resources");
+            Debug.LogError("resourceMax isn't the same length as the amount of resources " + planetInfo.resourceMax.Length + "/" + lengthOfAllResources);
         }
 
         UpdateProductionText();
+        UpdateDefensePointsText();
     }
 
     private void Update()
     {
-        for (int i = 0; i < lengthOfProdRes; i++)
+        if (planetInfo.hasBeenUnlocked)
         {
-            planetInfo.time[i] -= Time.deltaTime;
-
-            if (planetInfo.time[i] < 0)
+            for (int i = 0; i < lengthOfProdRes; i++)
             {
-                planetInfo.time[i] = planetInfo.productionTime[i];
+                planetInfo.time[i] -= Time.deltaTime;
 
-                if(planetInfo.isDoubleSpeed)
+                if (planetInfo.time[i] < 0)
                 {
-                    planetInfo.time[i] /= 2;
-                }
+                    planetInfo.time[i] = planetInfo.productionTime[i];
 
-                if (planetInfo.resourceValues[ResourceNum(i)] + planetInfo.productionGain[i] <= planetInfo.resourceMax[ResourceNum(i)])
-                {
-                    GainResource(i, planetInfo.productionGain[i]);
-                    SpawnCollectedText(ResourceNum(i), planetInfo.productionGain[i]);
-                }
-                else
-                {
-                    GainResource(i, planetInfo.resourceMax[ResourceNum(i)] - planetInfo.resourceValues[ResourceNum(i)]);
+                    if (planetInfo.isDoubleSpeed)
+                    {
+                        planetInfo.time[i] /= 2;
+                    }
+
+                    if (planetInfo.resourceValues[ResourceNum(i)] + planetInfo.productionGain[i] <= planetInfo.resourceMax[ResourceNum(i)])
+                    {
+                        GainResource(i, planetInfo.productionGain[i]);
+                        SpawnCollectedText(ResourceNum(i), planetInfo.productionGain[i]);
+                    }
+                    else
+                    {
+                        GainResource(i, planetInfo.resourceMax[ResourceNum(i)] - planetInfo.resourceValues[ResourceNum(i)]);
+                    }
                 }
             }
-        }
 
-        if(planetInfo.isDoubleSpeed)
-        {
-            planetInfo.doubleSpeedTime -= Time.deltaTime;
-
-            if(planetInfo.doubleSpeedTime < 0)
+            if (planetInfo.isDoubleSpeed)
             {
-                planetInfo.isDoubleSpeed = false;
-                print("double speed ended");
+                planetInfo.doubleSpeedTime -= Time.deltaTime;
+
+                if (planetInfo.doubleSpeedTime < 0)
+                {
+                    planetInfo.isDoubleSpeed = false;
+                    print("double speed ended");
+                }
             }
         }
     }
@@ -245,7 +261,7 @@ public class PlanetScript : MonoBehaviour
 
             for (int i = 0; i < lengthOfProdRes; i++)
             {
-                planetInfo.productionGain[i] += upgradeReq.upProdIncrease[GetLevelTier()];
+                planetInfo.productionGain[i] *= (upgradeReq.upProdIncrease[GetLevelTier()] + 100) * 0.01f;
             }
             UpdateProductionText();
         }
@@ -262,9 +278,11 @@ public class PlanetScript : MonoBehaviour
 
             planetInfo.resourceValues[(int)upgradeReq.upStorResource[GetLevelTier()]] -= upgradeReq.upStorAmount[GetLevelTier()];
 
+            spaceStationInfo.unitMax += spaceStationInfo.unitMaxIncrease;
+
             for (int i = 0; i < lengthOfProdRes; i++)
             {
-                planetInfo.resourceMax[ResourceNum(i)] += upgradeReq.upStorIncrease[GetLevelTier()];
+                planetInfo.resourceMax[ResourceNum(i)] *= (upgradeReq.upStorIncrease[GetLevelTier()] + 100) *0.01f;
             }
             UpdateProductionText();
         }
@@ -275,10 +293,10 @@ public class PlanetScript : MonoBehaviour
     }
     public void UnitPurchased()
     {
-        if (planetInfo.resourceValues[(int)spaceStationInfo.upProdResource[GetLevelTier()]] >= spaceStationInfo.unitUpAmount[GetLevelTier()]
+        if (planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[GetLevelTier()]] >= spaceStationInfo.unitBuyAmount[GetLevelTier()]
             && (spaceStationInfo.units + spaceStationInfo.unitGain) <= spaceStationInfo.unitMax)
         {
-            planetInfo.resourceValues[(int)spaceStationInfo.upProdResource[GetLevelTier()]] -= spaceStationInfo.unitUpAmount[GetLevelTier()];
+            planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[GetLevelTier()]] -= spaceStationInfo.unitBuyAmount[GetLevelTier()];
 
             spaceStationInfo.units += spaceStationInfo.unitGain;
             uiManager.UpdateUnitsText();
@@ -313,6 +331,12 @@ public class PlanetScript : MonoBehaviour
         {
             planetInfo = saveScript.GetSavedPlanetInfo(planetInfo);
         }
+    }
+
+    public void UpdateDefensePointsText()
+    {
+        defensePointsText.gameObject.SetActive(!GetPlanetInfo().hasBeenUnlocked);
+        defensePointsText.text = "Defense " + GetPlanetInfo().defensePoints + "/" + GetPlanetInfo().defenseMax;
     }
 
     public int GetLevelTier()

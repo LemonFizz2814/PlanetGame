@@ -42,6 +42,7 @@ public class CameraScript : MonoBehaviour
             {
                 Delta1 = new Vector2(Input.mousePosition.x - Screen.width / 2, Input.mousePosition.y - Screen.height / 2);
                 Delta1 /= scrollSpeed;
+                //MoveCamera(Delta1);
                 transform.Translate(Delta1, Space.World);
             }
 
@@ -116,10 +117,11 @@ public class CameraScript : MonoBehaviour
 
     public void MoveCamera(Vector3 _pos)
     {
-        transform.position = new Vector3(
+        /*transform.position = new Vector3(
             Mathf.Clamp(_pos.x, -boundary[unlockedPlanet, 0], boundary[unlockedPlanet, 0]),
             Mathf.Clamp(_pos.y, -boundary[unlockedPlanet, 1], boundary[unlockedPlanet, 1]),
-            -10);
+            -10);*/
+        transform.position = new Vector3(_pos.x, _pos.y,  -10);
     }
 
     public void SetUnlockedPlanet(int _i)
