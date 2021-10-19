@@ -5,7 +5,8 @@ using UnityEngine;
 public class TransportManager : MonoBehaviour
 {
     [SerializeField] private PlanetScript[] planetObjects;
-    private PlanetScript[] unlockedPlanetObjects;
+    private List<PlanetScript> unlockedPlanetObjects = new List<PlanetScript>();
+    private List<PlanetScript> lockedPlanetObjects = new List<PlanetScript>();
 
     [SerializeField] private GameObject transportVessel;
 
@@ -15,7 +16,8 @@ public class TransportManager : MonoBehaviour
 
     private void Start()
     {
-        unlockedPlanetObjects = planetObjects;
+        //unlockedPlanetObjects = planetObjects;
+        //lockedPlanetObjects = planetObjects;
     }
 
     public PlanetScript[] GetPlanetObjects()
@@ -24,21 +26,48 @@ public class TransportManager : MonoBehaviour
     }
     public PlanetScript[] GetUnlockedPlanetObjects()
     {
-        return unlockedPlanetObjects;
+        return unlockedPlanetObjects.ToArray();
     }
     public PlanetScript[] GetLockedPlanetObjects()
     {
-        return unlockedPlanetObjects;
+        return unlockedPlanetObjects.ToArray();
+    }
+
+    public void AddToUnlockedPlanet(bool _add, PlanetScript _planet)
+    {
+        if(_add)
+        {
+            unlockedPlanetObjects.Add(_planet);
+        } else {
+            unlockedPlanetObjects.Remove(_planet);
+        }
+    }
+    public void AddToLockedPlanet(bool _add, PlanetScript _planet)
+    {
+        if(_add)
+        {
+            lockedPlanetObjects.Add(_planet);
+        } else {
+            lockedPlanetObjects.Remove(_planet);
+        }
     }
 
     public void UpgradeMaxTransport(int _i)
     {
-        maxAmountOfTransports += _i;
+        /*if ()
+        {
+            maxAmountOfTransports += _i;
+        }
+        else
+        {
+            return false;
+        }
+        return true;*/
     }
 
     public void UpgradeTransportSpeed(int _i)
     {
-        transportSpeed += _i;
+        //transportSpeed += _i;
     }
 
     public void SpawnTransport(GameObject _planet, GameObject _previousPlanet, PlanetScript.ERESOURCES _resource, int _resourceAmount)

@@ -89,9 +89,11 @@ public class PlanetScript : MonoBehaviour
     [SerializeField] private float collectedSpawnRand;
     [SerializeField] private int collectedDestroy;
 
-    List<TextMesh> productionText = new List<TextMesh>();
-
     [SerializeField] private Transform productionTextsParent;
+
+    [SerializeField] TransportManager transportManager;
+
+    List<TextMesh> productionText = new List<TextMesh>();
 
     private int lengthOfAllResources;
     private int lengthOfProdRes;
@@ -119,6 +121,19 @@ public class PlanetScript : MonoBehaviour
 
         GetPlanetInfo().defensePoints = GetPlanetInfo().defenseMax;
 
+        if (GetPlanetInfo().hasBeenUnlocked)
+        {
+            transportManager.AddToUnlockedPlanet(true, this);
+        } else {
+            transportManager.AddToLockedPlanet(true, this);
+        }
+
+        //debug check
+        if (planetInfo.resourceMax.Length != lengthOfAllResources)
+        {
+            Debug.LogError("resourceMax isn't the same length as the amount of resources " + planetInfo.resourceMax.Length + "/" + lengthOfAllResources);
+        }
+
         for (int i = 0; i < lengthOfProdRes; i++)
         {
             planetInfo.time.Add(planetInfo.productionTime[i]);
@@ -136,12 +151,6 @@ public class PlanetScript : MonoBehaviour
         for (int i = 0; i < lengthOfAllResources; i++)
         {
             planetInfo.resourceValues.Add(0);
-        }
-
-        //debug check
-        if(planetInfo.resourceMax.Length != lengthOfAllResources)
-        {
-            Debug.LogError("resourceMax isn't the same length as the amount of resources " + planetInfo.resourceMax.Length + "/" + lengthOfAllResources);
         }
 
         UpdateProductionText();
@@ -251,7 +260,7 @@ public class PlanetScript : MonoBehaviour
         }
     }
 
-    public void UpgradeProduction()
+    public bool UpgradeProduction()
     {
         if (planetInfo.resourceValues[(int)upgradeReq.upProdResource[GetLevelTier()]] >= upgradeReq.upProdAmount[GetLevelTier()])
         {
@@ -261,16 +270,18 @@ public class PlanetScript : MonoBehaviour
 
             for (int i = 0; i < lengthOfProdRes; i++)
             {
-                planetInfo.productionGain[i] *= (upgradeReq.upProdIncrease[GetLevelTier()] + 100) * 0.01f;
+                planetInfo.productionGain[i] *= ((upgradeReq.upProdIncrease[GetLevelTier()] + 100) * 0.01f);
             }
             UpdateProductionText();
         }
         else
         {
             print("not enough resources");
+            return false;
         }
+        return true;
     }
-    public void UpgradeStorage()
+    public bool UpgradeStorage()
     {
         if (planetInfo.resourceValues[(int)upgradeReq.upStorResource[GetLevelTier()]] >= upgradeReq.upStorAmount[GetLevelTier()])
         {
@@ -282,16 +293,18 @@ public class PlanetScript : MonoBehaviour
 
             for (int i = 0; i < lengthOfProdRes; i++)
             {
-                planetInfo.resourceMax[ResourceNum(i)] *= (upgradeReq.upStorIncrease[GetLevelTier()] + 100) *0.01f;
+                planetInfo.resourceMax[ResourceNum(i)] *= (upgradeReq.upStorIncrease[GetLevelTier()] + 100) * 0.01f;
             }
             UpdateProductionText();
         }
         else
         {
             print("not enough resources");
+            return false;
         }
+        return true;
     }
-    public void UnitPurchased()
+    public bool UnitPurchased()
     {
         if (planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[GetLevelTier()]] >= spaceStationInfo.unitBuyAmount[GetLevelTier()]
             && (spaceStationInfo.units + spaceStationInfo.unitGain) <= spaceStationInfo.unitMax)
@@ -304,7 +317,9 @@ public class PlanetScript : MonoBehaviour
         else
         {
             print("not enough resources");
+            return false;
         }
+        return true;
     }
 
     public void IncreaseLevel(int _i)
@@ -331,6 +346,23 @@ public class PlanetScript : MonoBehaviour
         {
             planetInfo = saveScript.GetSavedPlanetInfo(planetInfo);
         }
+    }
+
+    public void RemoveDefensePoints(int _amount)
+    {
+        GetPlanetInfo().defensePoints -= _amount;
+
+        //check if unlocked
+        if(GetPlanetInfo().defensePoints <= 0)
+        {
+            GetPlanetInfo().hasBeenUnlocked = true;
+            GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
+
+            transportManager.AddToLockedPlanet(false, this);
+            transportManager.AddToUnlockedPlanet(true, this);
+        }
+
+        UpdateDefensePointsText();
     }
 
     public void UpdateDefensePointsText()

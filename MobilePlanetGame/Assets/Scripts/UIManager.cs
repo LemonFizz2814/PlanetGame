@@ -21,14 +21,17 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject resourceContent;
     [SerializeField] private GameObject resourceText;
     [SerializeField] private GameObject resourceDeliveryScreen;
-    [SerializeField] private GameObject attackPlanetScreen;
     [SerializeField] private GameObject resourceDeliveryContent;
+    [SerializeField] private GameObject attackPlanetScreen;
+    [SerializeField] private GameObject attackPlanetContent;
     [SerializeField] private GameObject planetDeliveryButton;
     [SerializeField] private GameObject planetAttackButton;
+    [SerializeField] private GameObject buttonPurchase;
 
     [SerializeField] private GameObject[] tabObjects;
 
     [SerializeField] private Sprite[] resourceIcons;
+    [SerializeField] private Sprite[] buttonPurchaseSprites;
 
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
 
@@ -71,6 +74,7 @@ public class UIManager : MonoBehaviour
         int levelTier = selectedPlanet.GetLevelTier();
 
         UpdateUnitsText();
+        CancelResourceDelivery();
 
         productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTier];
         storageReqText.text = selectedPlanet.GetUpgradeRequirements().upStorResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTier];
@@ -109,17 +113,17 @@ public class UIManager : MonoBehaviour
     {
         for(int i = 0; i < resourceContent.transform.childCount; i++)
         {
-            resourceContent.transform.GetChild(i).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + selectedPlanet.GetPlanetInfo().resourceMax[i];
+            resourceContent.transform.GetChild(i).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + (int)selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + (int)selectedPlanet.GetPlanetInfo().resourceMax[i];
         }
     }
 
-    public void UpgradeProductionButtonPressed()
+    public void UpgradeProductionButtonPressed(GameObject _obj)
     {
-        selectedPlanet.UpgradeProduction();
+        ButtonPurchaseSpawn(selectedPlanet.UpgradeProduction(), _obj.GetComponent<RectTransform>().anchoredPosition);
     }
-    public void UpgradeStorageButtonPressed()
+    public void UpgradeStorageButtonPressed(GameObject _obj)
     {
-        selectedPlanet.UpgradeStorage();
+        ButtonPurchaseSpawn(selectedPlanet.UpgradeStorage(), _obj.GetComponent<RectTransform>().anchoredPosition);
     }
 
     public void UpgradeMaxTransportPressed()
@@ -133,9 +137,9 @@ public class UIManager : MonoBehaviour
         transportManager.UpgradeTransportSpeed(1);
     }
 
-    public void PurchaseUnitsPressed()
+    public void PurchaseUnitsPressed(GameObject _obj)
     {
-        selectedPlanet.UnitPurchased();
+        ButtonPurchaseSpawn(selectedPlanet.UnitPurchased(), _obj.GetComponent<RectTransform>().anchoredPosition);
         UpdateUnitsText();
     }
 
@@ -201,30 +205,30 @@ public class UIManager : MonoBehaviour
         attackPlanetScreen.SetActive(true);
 
         //clear old content
-        foreach (Transform child in attackPlanetScreen.transform)
+        foreach (Transform child in attackPlanetContent.transform)
         {
             Destroy(child.gameObject);
         }
 
         for (int i = 0; i < transportManager.GetLockedPlanetObjects().Length; i++)
         {
-            GameObject planetDeliverObj = Instantiate(planetAttackButton, new Vector3(0, 0, 0), Quaternion.identity);
-            planetDeliverObj.transform.SetParent(attackPlanetScreen.transform);
-            planetDeliverObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(3, -30 - (50 * i));
-            planetDeliverObj.GetComponent<RectTransform>().sizeDelta = new Vector2(260, 50);
-            planetDeliverObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
-            planetDeliverObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
-            planetDeliverObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
+            GameObject planetAttackObj = Instantiate(planetAttackButton, new Vector3(0, 0, 0), Quaternion.identity);
+            planetAttackObj.transform.SetParent(attackPlanetContent.transform);
+            planetAttackObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(3, -30 - (50 * i));
+            planetAttackObj.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 50);
+            planetAttackObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
+            planetAttackObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
+            planetAttackObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
 
             int x = i;
-            planetDeliverObj.transform.GetComponent<Button>().onClick.AddListener(delegate { AttackPlanetPressed(x); });
+            planetAttackObj.transform.GetComponent<Button>().onClick.AddListener(delegate { AttackPlanetPressed(x); });
 
-            planetDeliverObj.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + transportManager.GetLockedPlanetObjects()[i].GetSpaceStationInfo().units + "/" + transportManager.GetLockedPlanetObjects()[i].GetSpaceStationInfo().unitMax;
-            planetDeliverObj.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().name;
-            planetDeliverObj.transform.GetChild(0).GetComponent<Image>().sprite = transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().sprite;
+            planetAttackObj.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().defensePoints + "/" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().defenseMax;
+            planetAttackObj.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().name;
+            planetAttackObj.transform.GetChild(0).GetComponent<Image>().sprite = transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().sprite;
         }
 
-        attackPlanetScreen.GetComponent<RectTransform>().sizeDelta = new Vector2(0, (50 * transportManager.GetLockedPlanetObjects().Length) + 5);
+        attackPlanetContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, (50 * transportManager.GetLockedPlanetObjects().Length) + 5);
     }
 
     public void DoubleSpeedPressed(float _time)
@@ -243,25 +247,27 @@ public class UIManager : MonoBehaviour
 
         selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
 
-        resourceDeliveryScreen.SetActive(false);
+        CancelResourceDelivery();
     }
 
     public void AttackPlanetPressed(int _planet)
     {
         //work here
-        /*
         print("planet selected " + _planet);
-        transportManager.SpawnTransport(
-            transportManager.GetPlanetObjects()[_planet].gameObject,
-            transportManager.GetPlanetObjects()[selectedPlanet.GetPlanetInfo().planetNum].gameObject,
-            _resource,
-            (int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
-
-        selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
-
-        resourceDeliveryScreen.SetActive(false);*/
+        transportManager.GetPlanetObjects()[_planet].RemoveDefensePoints(selectedPlanet.GetSpaceStationInfo().units);
+        selectedPlanet.GetSpaceStationInfo().units = 0;
+        CancelResourceDelivery();
     }
 
+
+    void ButtonPurchaseSpawn(bool _worked, Vector3 _pos)
+    {
+        GameObject buttonPurchaseObj = Instantiate(buttonPurchase, new Vector3(0, 0, 0), Quaternion.identity);
+        buttonPurchaseObj.transform.SetParent(gameObject.transform);
+        buttonPurchaseObj.GetComponent<RectTransform>().anchoredPosition = _pos;
+        buttonPurchaseObj.GetComponent<Image>().sprite = buttonPurchaseSprites[Convert.ToInt32(_worked)];
+        Destroy(buttonPurchaseObj, 0.5f);
+    }
     public void CancelResourceDelivery()
     {
         resourceDeliveryScreen.SetActive(false);

@@ -4,5 +4,5 @@ using UnityEngine;
 
 public class AsteroidScript : MonoBehaviour
 {
-    float speed = 4;
+    //float speed = 4;
 }

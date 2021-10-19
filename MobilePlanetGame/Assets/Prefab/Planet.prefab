@@ -51,7 +51,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10100, guid: 0000000000000000e000000000000000, type: 0}
+  - {fileID: 2100000, guid: fd3990ea034c50647b90bea9a63d642e, type: 3}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -91,7 +91,7 @@ TextMesh:
   m_FontSize: 50
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Font: {fileID: 12800000, guid: fd3990ea034c50647b90bea9a63d642e, type: 3}
   m_Color:
     serializedVersion: 2
     rgba: 4294967295
@@ -176,7 +176,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10100, guid: 0000000000000000e000000000000000, type: 0}
+  - {fileID: 2100000, guid: fd3990ea034c50647b90bea9a63d642e, type: 3}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -216,7 +216,7 @@ TextMesh:
   m_FontSize: 50
   m_FontStyle: 0
   m_RichText: 1
-  m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Font: {fileID: 12800000, guid: fd3990ea034c50647b90bea9a63d642e, type: 3}
   m_Color:
     serializedVersion: 2
     rgba: 4294967295
@@ -270,37 +270,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   planetInfo:
     name: Exodus
-    sprite: {fileID: 21300000, guid: 46242b4e31ec3ab498d85ac12c78da26, type: 3}
-    dullSprite: {fileID: 0}
+    sprite: {fileID: 21300000, guid: 2666fa76c6013e44e985f474b999c227, type: 3}
+    dullSprite: {fileID: 21300000, guid: ab19ea9c6133f02439fa71f7b6daf148, type: 3}
     planetNum: 0
     hasBeenUnlocked: 1
     isDoubleSpeed: 0
-    productionResources: 0100000002000000
+    productionResources: 0000000002000000
     productionTime:
-    - 3
-    - 0.2
-    productionGain:
-    - 12
     - 1
-    productionMax:
-    - 0
-    - 20
+    - 1
+    productionGain: 0500000002000000
+    productionMax: 90010000f4010000
     defenseMax: 10
     descriptionText: 'Text Text Text Text Text Text Text '
   upgradeReq:
-    upProdResource: 01000000
-    upProdAmount: 14000000
-    upProdIncrease: 0a000000
-    upStorResource: 02000000
-    upStorAmount: 50000000
-    upStorIncrease: 0a000000
+    upProdResource: 00000000
+    upProdAmount: 2c010000
+    upProdIncrease: 05000000
+    upStorResource: 04000000
+    upStorAmount: 88130000
+    upStorIncrease: 05000000
   spaceStationInfo:
     isSpaceStation: 0
     unitGain: 0
     unitMax: 0
-    upProdResource: 
-    unitUpAmount: 
-    units: 0
+    unitMaxIncrease: 0
+    unitBuyResource: 
+    unitBuyAmount: 
   saveScript: {fileID: 0}
   nameText: {fileID: 5794203775788871609}
   defensePointsText: {fileID: 5682159782495455499}
@@ -309,6 +305,7 @@ MonoBehaviour:
   collectedSpawnRand: 1
   collectedDestroy: 1
   productionTextsParent: {fileID: 5794203775585219738}
+  transportManager: {fileID: 0}
 --- !u!212 &5794203777291048571
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -349,7 +346,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 46242b4e31ec3ab498d85ac12c78da26, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2666fa76c6013e44e985f474b999c227, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
