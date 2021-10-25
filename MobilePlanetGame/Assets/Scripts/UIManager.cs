@@ -12,7 +12,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI unitsText;
 
-    [SerializeField] private Slider levelSlider;
+    [SerializeField] private Slider levelSliderProduction;
+    [SerializeField] private Slider levelSliderStorage;
 
     [SerializeField] private TransportManager transportManager;
     [SerializeField] private CameraScript cameraScript;
@@ -37,15 +38,19 @@ public class UIManager : MonoBehaviour
 
     private PlanetScript selectedPlanet;
 
+    private int resourceLength;
+
     private void Start()
     {
         SetActiveInfoBox(false);
         resourceDeliveryScreen.SetActive(false);
 
+        resourceLength = Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length - 1;
+
         //debug check
-        if(resourceIcons.Length != Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length)
+        if (resourceIcons.Length != resourceLength)
         {
-            Debug.LogError("resourceIcons length not same as ERESOURCES " + resourceIcons.Length + "/" + Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length);
+            Debug.LogError("resourceIcons length not same as ERESOURCES " + resourceIcons.Length + "/" + resourceLength);
         }
     }
 
@@ -71,16 +76,24 @@ public class UIManager : MonoBehaviour
         cameraScript.MoveCamera(new Vector3(selectedPlanet.transform.position.x, selectedPlanet.transform.position.y, -10));
         cameraScript.SetCamZoom(cameraScript.GetStartingZoom());
 
-        int levelTier = selectedPlanet.GetLevelTier();
+        int levelTierProd = selectedPlanet.GetLevelProdTier() * 2;
+        int levelTierStor = selectedPlanet.GetLevelStorTier() * 2;
 
         UpdateUnitsText();
         CancelResourceDelivery();
 
-        productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTier];
-        storageReqText.text = selectedPlanet.GetUpgradeRequirements().upStorResource[levelTier].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTier];
+        productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd];
+        storageReqText.text = selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTierStor];
+
+        if (selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1] != PlanetScript.ERESOURCES.None)
+        { productionReqText.text += "\n" + selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd + 1]; }
+
+        if (selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor + 1] != PlanetScript.ERESOURCES.None)
+        { storageReqText.text += "\n" + selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor + 1].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTierStor + 1]; }
+
         descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
 
-        levelSlider.value = selectedPlanet.GetPlanetInfo().level % 5;
+        UpdateLevels();
 
         //clear old content
         foreach (Transform child in resourceContent.transform)
@@ -88,7 +101,7 @@ public class UIManager : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        for (int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
+        for (int i = 0; i < resourceLength; i++)
         {
             GameObject resourceTextObj = Instantiate(resourceText, new Vector3(0, 0, 0), Quaternion.identity);
             resourceTextObj.transform.SetParent(resourceContent.transform);
@@ -106,7 +119,7 @@ public class UIManager : MonoBehaviour
             resourceTextObj.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + selectedPlanet.GetPlanetInfo().resourceMax[i];
         }
 
-        resourceContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40 * Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length);
+        resourceContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40 * resourceLength);
     }
 
     public void UpdateResourcesTab()
@@ -229,6 +242,14 @@ public class UIManager : MonoBehaviour
         }
 
         attackPlanetContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, (50 * transportManager.GetLockedPlanetObjects().Length) + 5);
+    }
+
+    public void UpdateLevels()
+    {
+        levelSliderProduction.value = selectedPlanet.GetPlanetInfo().levelProd % 5;
+        levelSliderProduction.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + selectedPlanet.GetPlanetInfo().levelProd;
+        levelSliderStorage.value = selectedPlanet.GetPlanetInfo().levelStor % 5;
+        levelSliderStorage.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + selectedPlanet.GetPlanetInfo().levelStor;
     }
 
     public void DoubleSpeedPressed(float _time)

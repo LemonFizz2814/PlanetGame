@@ -17,6 +17,7 @@ public class PlanetScript : MonoBehaviour
         Gold,
         Cosmic_Quartz,
         Space_Dust,
+        None,
     };
 
     [Serializable]
@@ -39,7 +40,8 @@ public class PlanetScript : MonoBehaviour
         [NonSerialized] public float[] resourceMax = { 120, 72, 100, 100, 100, 100, 100, 100, 100, 100 }; //set on very first start
 
         //level variables
-        [NonSerialized] public int level = 0;
+        [NonSerialized] public int levelProd = 0;
+        [NonSerialized] public int levelStor = 0;
 
         //lists
         [NonSerialized] public List<float> resourceValues = new List<float>();
@@ -109,7 +111,7 @@ public class PlanetScript : MonoBehaviour
     {
         UpdateInfo();
 
-        lengthOfAllResources = Enum.GetNames(typeof(ERESOURCES)).Length;
+        lengthOfAllResources = Enum.GetNames(typeof(ERESOURCES)).Length - 1;
         lengthOfProdRes = planetInfo.productionResources.Length;
 
         uiManager = GameObject.FindGameObjectWithTag("Canvas").GetComponent<UIManager>();
@@ -262,15 +264,19 @@ public class PlanetScript : MonoBehaviour
 
     public bool UpgradeProduction()
     {
-        if (planetInfo.resourceValues[(int)upgradeReq.upProdResource[GetLevelTier()]] >= upgradeReq.upProdAmount[GetLevelTier()])
-        {
-            IncreaseLevel(1);
+        int level = GetLevelProdTier() * 2;
 
-            planetInfo.resourceValues[(int)upgradeReq.upProdResource[GetLevelTier()]] -= upgradeReq.upProdAmount[GetLevelTier()];
+        if (planetInfo.resourceValues[(int)upgradeReq.upProdResource[level]] >= upgradeReq.upProdAmount[level]
+            && planetInfo.resourceValues[(int)upgradeReq.upProdResource[level + 1]] >= upgradeReq.upProdAmount[level + 1])
+        {
+            IncreaseLevelProd(1);
+
+            planetInfo.resourceValues[(int)upgradeReq.upProdResource[level]] -= upgradeReq.upProdAmount[level];
+            planetInfo.resourceValues[(int)upgradeReq.upProdResource[level + 1]] -= upgradeReq.upProdAmount[level + 1];
 
             for (int i = 0; i < lengthOfProdRes; i++)
             {
-                planetInfo.productionGain[i] *= ((upgradeReq.upProdIncrease[GetLevelTier()] + 100) * 0.01f);
+                planetInfo.productionGain[i] *= ((upgradeReq.upProdIncrease[GetLevelProdTier()] + 100) * 0.01f);
             }
             UpdateProductionText();
         }
@@ -283,17 +289,21 @@ public class PlanetScript : MonoBehaviour
     }
     public bool UpgradeStorage()
     {
-        if (planetInfo.resourceValues[(int)upgradeReq.upStorResource[GetLevelTier()]] >= upgradeReq.upStorAmount[GetLevelTier()])
-        {
-            IncreaseLevel(1);
+        int level = GetLevelStorTier() * 2;
 
-            planetInfo.resourceValues[(int)upgradeReq.upStorResource[GetLevelTier()]] -= upgradeReq.upStorAmount[GetLevelTier()];
+        if (planetInfo.resourceValues[(int)upgradeReq.upStorResource[level]] >= upgradeReq.upStorAmount[level]
+            && planetInfo.resourceValues[(int)upgradeReq.upStorResource[level + 1]] >= upgradeReq.upStorAmount[level + 1])
+        {
+            IncreaseLevelStor(1);
+
+            planetInfo.resourceValues[(int)upgradeReq.upStorResource[level]] -= upgradeReq.upStorAmount[level];
+            planetInfo.resourceValues[(int)upgradeReq.upStorResource[level + 1]] -= upgradeReq.upStorAmount[level + 1];
 
             spaceStationInfo.unitMax += spaceStationInfo.unitMaxIncrease;
 
             for (int i = 0; i < lengthOfProdRes; i++)
             {
-                planetInfo.resourceMax[ResourceNum(i)] *= (upgradeReq.upStorIncrease[GetLevelTier()] + 100) * 0.01f;
+                planetInfo.resourceMax[ResourceNum(i)] *= (upgradeReq.upStorIncrease[GetLevelStorTier()] + 100) * 0.01f;
             }
             UpdateProductionText();
         }
@@ -306,10 +316,10 @@ public class PlanetScript : MonoBehaviour
     }
     public bool UnitPurchased()
     {
-        if (planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[GetLevelTier()]] >= spaceStationInfo.unitBuyAmount[GetLevelTier()]
+        if (planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[0]] >= spaceStationInfo.unitBuyAmount[0]
             && (spaceStationInfo.units + spaceStationInfo.unitGain) <= spaceStationInfo.unitMax)
         {
-            planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[GetLevelTier()]] -= spaceStationInfo.unitBuyAmount[GetLevelTier()];
+            planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[0]] -= spaceStationInfo.unitBuyAmount[0];
 
             spaceStationInfo.units += spaceStationInfo.unitGain;
             uiManager.UpdateUnitsText();
@@ -322,11 +332,22 @@ public class PlanetScript : MonoBehaviour
         return true;
     }
 
-    public void IncreaseLevel(int _i)
+    public void IncreaseLevelProd(int _i)
     {
-        planetInfo.level += _i;
+        planetInfo.levelProd += _i;
+        uiManager.UpdateLevels();
 
-        if(planetInfo.level % levelUpAmount == 0)
+        if (planetInfo.levelProd % levelUpAmount == 0)
+        {
+            SetDoubleSpeed(levelUpDoubleSpeedTime);
+        }
+    }
+    public void IncreaseLevelStor(int _i)
+    {
+        planetInfo.levelStor += _i;
+        uiManager.UpdateLevels();
+
+        if (planetInfo.levelStor % levelUpAmount == 0)
         {
             SetDoubleSpeed(levelUpDoubleSpeedTime);
         }
@@ -371,9 +392,13 @@ public class PlanetScript : MonoBehaviour
         defensePointsText.text = "Defense " + GetPlanetInfo().defensePoints + "/" + GetPlanetInfo().defenseMax;
     }
 
-    public int GetLevelTier()
+    public int GetLevelProdTier()
     {
-        return (int)Mathf.Floor(planetInfo.level / levelUpAmount);
+        return (int)Mathf.Floor(planetInfo.levelProd / levelUpAmount);
+    }
+    public int GetLevelStorTier()
+    {
+        return (int)Mathf.Floor(planetInfo.levelStor / levelUpAmount);
     }
 
     public UpgradeRequirements GetUpgradeRequirements()

@@ -12,7 +12,8 @@ public class SaveScript : MonoBehaviour
         //save
         PlayerPrefs.SetInt(planetNum + "hasBeenUnlocked", BoolToInt(_planetInfo.hasBeenUnlocked));
         PlayerPrefs.SetInt(planetNum + "isDoubleSpeed", BoolToInt(_planetInfo.isDoubleSpeed));
-        PlayerPrefs.SetInt(planetNum + "level", _planetInfo.level);
+        PlayerPrefs.SetInt(planetNum + "levelProd", _planetInfo.levelProd);
+        PlayerPrefs.SetInt(planetNum + "levelStor", _planetInfo.levelStor);
 
         for(int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
         {
@@ -26,7 +27,8 @@ public class SaveScript : MonoBehaviour
 
         _planetInfo.hasBeenUnlocked = IntToBool(PlayerPrefs.GetInt(planetNum + "hasBeenUnlocked"));
         _planetInfo.isDoubleSpeed = IntToBool(PlayerPrefs.GetInt(planetNum + "isDoubleSpeed"));
-        _planetInfo.level = PlayerPrefs.GetInt(planetNum + "level");
+        _planetInfo.levelProd = PlayerPrefs.GetInt(planetNum + "levelProd");
+        _planetInfo.levelStor = PlayerPrefs.GetInt(planetNum + "levelStor");
 
         for (int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
         {
