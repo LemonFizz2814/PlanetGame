@@ -5,6 +5,39 @@ using System;
 
 public class SaveScript : MonoBehaviour
 {
+    UIManager uiManager;
+
+    private void Start()
+    {
+        uiManager = GameObject.FindGameObjectWithTag("Canvas").GetComponent<UIManager>();
+
+        PlayerPrefs.SetInt("FirstTime", 0);
+
+        if (PlayerPrefs.GetInt("FirstTime") == 0)
+        {
+            PlayerPrefs.SetInt("FirstTime", 1);
+
+            for (int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
+            {
+                PlayerPrefs.SetFloat("resourceUnlocked" + i, 0);
+            }
+
+            //set unlocked resources
+            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Timber);
+            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Water);
+            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Sulphur);
+        }
+    }
+
+    public void SaveGeneralInfo()
+    {
+        //set unlocked resources
+        for(int i = 0; i < uiManager.GetUnlockedResources().Count; i++)
+        {
+            PlayerPrefs.SetFloat("resourceUnlocked" + i, 1);
+        }
+    }
+
     public void SavePlanetInfo(PlanetScript.PlanetInfo _planetInfo)
     {
         string planetNum = "Planet" + _planetInfo.planetNum;

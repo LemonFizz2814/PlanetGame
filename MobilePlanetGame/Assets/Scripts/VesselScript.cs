@@ -23,6 +23,12 @@ public class VesselScript : MonoBehaviour
         resource = _resource;
         resourceAmount = _resourceAmount;
 
+        Vector3 diff = planetHeadingTo.transform.position - planetHeadingFrom.transform.position;
+        diff.Normalize();
+
+        float rot_z = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, rot_z - 90);
+
         firstDelivery = true;
 
         //spawn in dotted line
@@ -45,8 +51,7 @@ public class VesselScript : MonoBehaviour
                 firstDelivery = false;
 
                 planetHeadingTo.GetComponent<PlanetScript>().GainResourceExternal(resource, resourceAmount);
-
-                //planetHeadingTo = previousPlanet;
+                //deliver and destroy
                 Destroy(gameObject);
             }
         }

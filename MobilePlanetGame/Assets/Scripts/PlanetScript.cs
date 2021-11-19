@@ -36,8 +36,9 @@ public class PlanetScript : MonoBehaviour
         public ERESOURCES[] productionResources;
         public float[] productionTime;
         public float[] productionGain;
-        public float[] productionMax;
-        [NonSerialized] public float[] resourceMax = { 120, 72, 100, 100, 100, 100, 100, 100, 100, 100 }; //set on very first start
+        public float StorageMultiply;
+        //public float[] productionMax;
+        [NonSerialized] public float[] resourceMax = { 400, 500, 500, 10000, 1250, 95000, 250, 7500, 1, 550 }; //set on very first start
 
         //level variables
         [NonSerialized] public int levelProd = 0;
@@ -86,6 +87,7 @@ public class PlanetScript : MonoBehaviour
     [SerializeField] private TextMesh defensePointsText;
     [SerializeField] private GameObject collectedTextPrefab;
     [SerializeField] private GameObject productionTextPrefab;
+    [SerializeField] private GameObject x2PointsOutline;
     private UIManager uiManager;
 
     [SerializeField] private float collectedSpawnRand;
@@ -114,6 +116,8 @@ public class PlanetScript : MonoBehaviour
         lengthOfAllResources = Enum.GetNames(typeof(ERESOURCES)).Length - 1;
         lengthOfProdRes = planetInfo.productionResources.Length;
 
+        x2PointsOutline.SetActive(planetInfo.isDoubleSpeed);
+
         uiManager = GameObject.FindGameObjectWithTag("Canvas").GetComponent<UIManager>();
 
         upgradeReq.maxUpgrades = upgradeReq.upProdResource.Length;
@@ -123,12 +127,13 @@ public class PlanetScript : MonoBehaviour
 
         GetPlanetInfo().defensePoints = GetPlanetInfo().defenseMax;
 
-        if (GetPlanetInfo().hasBeenUnlocked)
+        //add planet to transport manager locked or unlocked lists
+        /*if (GetPlanetInfo().hasBeenUnlocked)
         {
             transportManager.AddToUnlockedPlanet(true, this);
         } else {
             transportManager.AddToLockedPlanet(true, this);
-        }
+        }*/
 
         //debug check
         if (planetInfo.resourceMax.Length != lengthOfAllResources)
@@ -136,18 +141,9 @@ public class PlanetScript : MonoBehaviour
             Debug.LogError("resourceMax isn't the same length as the amount of resources " + planetInfo.resourceMax.Length + "/" + lengthOfAllResources);
         }
 
-        for (int i = 0; i < lengthOfProdRes; i++)
+        if(GetPlanetInfo().hasBeenUnlocked)
         {
-            planetInfo.time.Add(planetInfo.productionTime[i]);
-            GameObject productionTextObj = Instantiate(productionTextPrefab, new Vector3(0, 0, 0), Quaternion.identity);
-
-            productionText.Add(productionTextObj.GetComponent<TextMesh>());
-            productionTextObj.transform.SetParent(productionTextsParent);
-            productionTextObj.transform.localPosition = new Vector3(0, -1.75f - (i * 0.5f), 0);
-
-            //set resource max
-            //planetInfo.resourceMax[ResourceNum(i)] *= ((planetInfo.productionMax[i] + 100) * 0.01f);
-            planetInfo.resourceMax[ResourceNum(i)] = planetInfo.productionMax[i];
+            SetUpProductionText();
         }
 
         for (int i = 0; i < lengthOfAllResources; i++)
@@ -163,6 +159,7 @@ public class PlanetScript : MonoBehaviour
     {
         if (planetInfo.hasBeenUnlocked)
         {
+            //loop through all resources
             for (int i = 0; i < lengthOfProdRes; i++)
             {
                 planetInfo.time[i] -= Time.deltaTime;
@@ -188,12 +185,14 @@ public class PlanetScript : MonoBehaviour
                 }
             }
 
+            //if this palnet is on double speed
             if (planetInfo.isDoubleSpeed)
             {
                 planetInfo.doubleSpeedTime -= Time.deltaTime;
 
                 if (planetInfo.doubleSpeedTime < 0)
                 {
+                    x2PointsOutline.SetActive(false);
                     planetInfo.isDoubleSpeed = false;
                     print("double speed ended");
                 }
@@ -206,6 +205,10 @@ public class PlanetScript : MonoBehaviour
         print("double speed set to " + _time);
         planetInfo.isDoubleSpeed = true;
         planetInfo.doubleSpeedTime = _time;
+
+        x2PointsOutline.SetActive(true);
+
+        uiManager.AddNotificiton(planetInfo.name + " has double speed", planetInfo.sprite);
     }
 
     void GainResource(int _i, float _gain)
@@ -214,6 +217,7 @@ public class PlanetScript : MonoBehaviour
         UpdateProductionText();
     }
 
+    //spawn in collected text on planet of resource
     void SpawnCollectedText(int _resource, float _gain)
     {
         Vector2 pos = new Vector2(
@@ -221,10 +225,29 @@ public class PlanetScript : MonoBehaviour
             transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));
         GameObject textObj = Instantiate(collectedTextPrefab, pos, Quaternion.identity);
         textObj.GetComponent<TextMesh>().text = "+" + _gain;
-        textObj.transform.GetChild(0).localPosition = new Vector3(4 + (_gain.ToString().Length * 1.2f), 0, -1);
+        textObj.transform.SetParent(transform);
+        //textObj.transform.GetChild(0).localPosition = new Vector3(0, -1.75f - (Array.IndexOf(uiManager.GetResourceIcon(), _resource) * 0.5f), 0);//new Vector3(4 + (_gain.ToString().Length * 1.2f), 0, -1);
+        textObj.transform.GetChild(0).localPosition = new Vector3(0, 0, 0);
         textObj.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = uiManager.GetResourceIcon()[_resource];
 
         Destroy(textObj, collectedDestroy);
+    }
+
+    public void SetUpProductionText()
+    {
+        for (int i = 0; i < lengthOfProdRes; i++)
+        {
+            //add production time
+            planetInfo.time.Add(planetInfo.productionTime[i]);
+            GameObject productionTextObj = Instantiate(productionTextPrefab, new Vector3(0, 0, 0), Quaternion.identity);
+
+            productionText.Add(productionTextObj.GetComponent<TextMesh>());
+            productionTextObj.transform.SetParent(productionTextsParent);
+            productionTextObj.transform.localPosition = new Vector3(0, -1.75f - (i * 0.5f), 0);
+
+            //set resource increase
+            planetInfo.resourceMax[ResourceNum(i)] *= planetInfo.StorageMultiply;
+        }
     }
 
     public bool GainResourceExternal(ERESOURCES _resource, int _amount)
@@ -235,11 +258,14 @@ public class PlanetScript : MonoBehaviour
             SpawnCollectedText((int)_resource, _amount);
             planetInfo.resourceValues[(int)_resource] += _amount;
             UpdateProductionText();
-            return true;
+            return false;
         }
         else
         {
-            return false;
+            //float whatsLeft = (planetInfo.resourceValues[(int)_resource] + _amount) - planetInfo.resourceMax[(int)_resource];
+            planetInfo.resourceValues[(int)_resource] = planetInfo.resourceMax[(int)_resource];
+            //return whatsLeft;
+            return true;
         }
     }
 
@@ -248,17 +274,22 @@ public class PlanetScript : MonoBehaviour
         return (int)planetInfo.productionResources[_i];
     }
 
+    //planet visable production text
     void UpdateProductionText()
     {
-        for (int i = 0; i < lengthOfProdRes; i++)
+        if (GetPlanetInfo().hasBeenUnlocked)
         {
-            productionText[i].text = "" + planetInfo.productionResources[i].ToString() + ": " +
-                planetInfo.resourceValues[ResourceNum(i)] + "/" + planetInfo.resourceMax[ResourceNum(i)] + " +" + planetInfo.productionTime[i] + "/s";
-        }
+            for (int i = 0; i < lengthOfProdRes; i++)
+            {
+                productionText[i].text = "" + planetInfo.productionResources[i].ToString() + ": " +
+                    planetInfo.resourceValues[ResourceNum(i)] + "/" + planetInfo.resourceMax[ResourceNum(i)] + " +" + planetInfo.productionTime[i] + "/s";
+            }
 
-        if (currentlyClicked)
-        {
-            uiManager.UpdateResourcesTab();
+            if (currentlyClicked)
+            {
+                uiManager.UpdateResourcesTab();
+                uiManager.UpdateRequirementsText();
+            }
         }
     }
 
@@ -266,13 +297,13 @@ public class PlanetScript : MonoBehaviour
     {
         int level = GetLevelProdTier() * 2;
 
-        if (planetInfo.resourceValues[(int)upgradeReq.upProdResource[level]] >= upgradeReq.upProdAmount[level]
-            && planetInfo.resourceValues[(int)upgradeReq.upProdResource[level + 1]] >= upgradeReq.upProdAmount[level + 1])
+        if (CanBuyProduction(level))
         {
             IncreaseLevelProd(1);
 
             planetInfo.resourceValues[(int)upgradeReq.upProdResource[level]] -= upgradeReq.upProdAmount[level];
-            planetInfo.resourceValues[(int)upgradeReq.upProdResource[level + 1]] -= upgradeReq.upProdAmount[level + 1];
+            if (upgradeReq.upProdResource[level + 1] != ERESOURCES.None)
+            { planetInfo.resourceValues[(int)upgradeReq.upProdResource[level + 1]] -= upgradeReq.upProdAmount[level + 1]; }
 
             for (int i = 0; i < lengthOfProdRes; i++)
             {
@@ -291,13 +322,13 @@ public class PlanetScript : MonoBehaviour
     {
         int level = GetLevelStorTier() * 2;
 
-        if (planetInfo.resourceValues[(int)upgradeReq.upStorResource[level]] >= upgradeReq.upStorAmount[level]
-            && planetInfo.resourceValues[(int)upgradeReq.upStorResource[level + 1]] >= upgradeReq.upStorAmount[level + 1])
+        if (CanBuyStorage(level))
         {
             IncreaseLevelStor(1);
 
             planetInfo.resourceValues[(int)upgradeReq.upStorResource[level]] -= upgradeReq.upStorAmount[level];
-            planetInfo.resourceValues[(int)upgradeReq.upStorResource[level + 1]] -= upgradeReq.upStorAmount[level + 1];
+            if (upgradeReq.upStorResource[level + 1] != ERESOURCES.None)
+            { planetInfo.resourceValues[(int)upgradeReq.upStorResource[level + 1]] -= upgradeReq.upStorAmount[level + 1]; }
 
             spaceStationInfo.unitMax += spaceStationInfo.unitMaxIncrease;
 
@@ -337,9 +368,13 @@ public class PlanetScript : MonoBehaviour
         planetInfo.levelProd += _i;
         uiManager.UpdateLevels();
 
+        uiManager.UpdateRequirementsText();
+
         if (planetInfo.levelProd % levelUpAmount == 0)
         {
+            uiManager.AddNotificiton(planetInfo.name + " leveled up production to level " + GetLevelProdTier(), planetInfo.sprite);
             SetDoubleSpeed(levelUpDoubleSpeedTime);
+            UpdateProductionText();
         }
     }
     public void IncreaseLevelStor(int _i)
@@ -347,9 +382,37 @@ public class PlanetScript : MonoBehaviour
         planetInfo.levelStor += _i;
         uiManager.UpdateLevels();
 
+        uiManager.UpdateRequirementsText();
+
         if (planetInfo.levelStor % levelUpAmount == 0)
         {
+            uiManager.AddNotificiton(planetInfo.name + " leveled up storage to level " + GetLevelStorTier(), planetInfo.sprite);
             SetDoubleSpeed(levelUpDoubleSpeedTime);
+        }
+    }
+
+    public bool CanBuyProduction(int _level)
+    {
+        if(upgradeReq.upProdResource[_level + 1] == ERESOURCES.None)
+        {
+            return planetInfo.resourceValues[(int)upgradeReq.upProdResource[_level]] >= upgradeReq.upProdAmount[_level];
+        }
+        else
+        {
+            return planetInfo.resourceValues[(int)upgradeReq.upProdResource[_level]] >= upgradeReq.upProdAmount[_level]
+                && planetInfo.resourceValues[(int)upgradeReq.upProdResource[_level + 1]] >= upgradeReq.upProdAmount[_level + 1];
+        }
+    }
+    public bool CanBuyStorage(int _level)
+    {
+        if (upgradeReq.upStorResource[_level + 1] == ERESOURCES.None)
+        {
+            return planetInfo.resourceValues[(int)upgradeReq.upStorResource[_level]] >= upgradeReq.upStorAmount[_level];
+        }
+        else
+        {
+            return planetInfo.resourceValues[(int)upgradeReq.upStorResource[_level]] >= upgradeReq.upStorAmount[_level]
+            && planetInfo.resourceValues[(int)upgradeReq.upStorResource[_level + 1]] >= upgradeReq.upStorAmount[_level + 1];
         }
     }
 
@@ -377,7 +440,10 @@ public class PlanetScript : MonoBehaviour
         if(GetPlanetInfo().defensePoints <= 0)
         {
             GetPlanetInfo().hasBeenUnlocked = true;
+            SetUpProductionText();
             GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
+
+            uiManager.AddNotificiton("New Planet Discovered - " + planetInfo.planetNum, planetInfo.sprite);
 
             transportManager.AddToLockedPlanet(false, this);
             transportManager.AddToUnlockedPlanet(true, this);
@@ -428,7 +494,7 @@ public class PlanetScript : MonoBehaviour
         {
             currentlyClicked = !currentlyClicked;
 
-            if (currentlyClicked)
+            if (currentlyClicked && uiManager.GetPlanetScript() == null)
             {
                 uiManager.UpdateInfoBox(transform.GetComponent<PlanetScript>());
                 uiManager.ShowTab(0);

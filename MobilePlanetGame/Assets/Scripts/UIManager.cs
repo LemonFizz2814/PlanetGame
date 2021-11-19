@@ -7,32 +7,47 @@ using TMPro;
 
 public class UIManager : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI productionReqText;
-    [SerializeField] private TextMeshProUGUI storageReqText;
     [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI unitsText;
 
+    [SerializeField] private Slider levelTierSliderProduction;
+    [SerializeField] private Slider levelTierSliderStorage;
     [SerializeField] private Slider levelSliderProduction;
     [SerializeField] private Slider levelSliderStorage;
 
     [SerializeField] private TransportManager transportManager;
     [SerializeField] private CameraScript cameraScript;
+    [SerializeField] private SaveScript saveScript;
 
-    [SerializeField] private GameObject infoBox;
+    [SerializeField] private GameObject planetInfoScreen;
+    [SerializeField] private GameObject defaultScreen;
+    [SerializeField] private GameObject settingsScreen;
+
     [SerializeField] private GameObject resourceContent;
     [SerializeField] private GameObject resourceText;
     [SerializeField] private GameObject resourceDeliveryScreen;
     [SerializeField] private GameObject resourceDeliveryContent;
+
     [SerializeField] private GameObject attackPlanetScreen;
     [SerializeField] private GameObject attackPlanetContent;
+
     [SerializeField] private GameObject planetDeliveryButton;
     [SerializeField] private GameObject planetAttackButton;
+
+    [SerializeField] private GameObject notificationBar;
+
     [SerializeField] private GameObject buttonPurchase;
 
     [SerializeField] private GameObject[] tabObjects;
 
+    [SerializeField] private Image[] upgradeButtons;
+
     [SerializeField] private Sprite[] resourceIcons;
     [SerializeField] private Sprite[] buttonPurchaseSprites;
+    [SerializeField] private Sprite[] buttonReadySprites;
+    [SerializeField] private Sprite notificationIcon;
+
+    [SerializeField] private float notificationWait;
 
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
 
@@ -40,29 +55,47 @@ public class UIManager : MonoBehaviour
 
     private int resourceLength;
 
+    private List<Sprite> notificationImageList = new List<Sprite>();
+    private List<string> notificationTextList = new List<string>();
+
     private void Start()
     {
         SetActiveInfoBox(false);
+        SettingButtonPressed(false);
+        notificationBar.SetActive(false);
         resourceDeliveryScreen.SetActive(false);
 
         resourceLength = Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length - 1;
+
+        //getting saved unlocked resources
+        for (int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
+        {
+            if (PlayerPrefs.GetFloat("resourceUnlocked" + i) == 1)
+            {
+                unlockedResources.Add((PlanetScript.ERESOURCES)i);
+            }
+        }
 
         //debug check
         if (resourceIcons.Length != resourceLength)
         {
             Debug.LogError("resourceIcons length not same as ERESOURCES " + resourceIcons.Length + "/" + resourceLength);
         }
+
+        AddNotificiton("Welcome", notificationIcon);
     }
 
     public void SetActiveInfoBox(bool _active)
     {
-        infoBox.SetActive(_active);
+        planetInfoScreen.SetActive(_active);
+        defaultScreen.SetActive(!_active);
     }
 
     public void ClosePressed()
     {
         SetActiveInfoBox(false);
         selectedPlanet.ClickedOn();
+        selectedPlanet = null;
         cameraScript.SetCanMove(true);
     }
 
@@ -76,24 +109,10 @@ public class UIManager : MonoBehaviour
         cameraScript.MoveCamera(new Vector3(selectedPlanet.transform.position.x, selectedPlanet.transform.position.y, -10));
         cameraScript.SetCamZoom(cameraScript.GetStartingZoom());
 
-        int levelTierProd = selectedPlanet.GetLevelProdTier() * 2;
-        int levelTierStor = selectedPlanet.GetLevelStorTier() * 2;
-
         UpdateUnitsText();
-        CancelResourceDelivery();
-
-        productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd];
-        storageReqText.text = selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTierStor];
-
-        if (selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1] != PlanetScript.ERESOURCES.None)
-        { productionReqText.text += "\n" + selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd + 1]; }
-
-        if (selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor + 1] != PlanetScript.ERESOURCES.None)
-        { storageReqText.text += "\n" + selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor + 1].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTierStor + 1]; }
-
-        descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
-
         UpdateLevels();
+        UpdateRequirementsText();
+        CancelResourceDelivery();
 
         //clear old content
         foreach (Transform child in resourceContent.transform)
@@ -101,12 +120,13 @@ public class UIManager : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        for (int i = 0; i < resourceLength; i++)
+        //add resource text in resource tab
+        for (int i = 0; i < unlockedResources.Count; i++)
         {
             GameObject resourceTextObj = Instantiate(resourceText, new Vector3(0, 0, 0), Quaternion.identity);
             resourceTextObj.transform.SetParent(resourceContent.transform);
-            resourceTextObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(-10, -20 - (35 * i));
-            resourceTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(200, 32);
+            resourceTextObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(14, -20 - (35 * i));
+            resourceTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(250, 32);
             resourceTextObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
             resourceTextObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
             resourceTextObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
@@ -114,19 +134,74 @@ public class UIManager : MonoBehaviour
             resourceTextObj.transform.GetChild(0).GetComponent<Image>().sprite = resourceIcons[i];
 
             int x = i;
-            resourceTextObj.transform.GetChild(1).GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
-
-            resourceTextObj.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + selectedPlanet.GetPlanetInfo().resourceMax[i];
+            resourceTextObj.transform.GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
         }
 
+        UpdateResourcesTab();
+
         resourceContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40 * resourceLength);
+    }
+
+    //update upgrade requirements text
+    public void UpdateRequirementsText()
+    {
+        int levelTierProd = selectedPlanet.GetLevelProdTier() * 2;
+        int levelTierStor = selectedPlanet.GetLevelStorTier() * 2;
+
+        //productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd];
+        RequirementsText(0).text = selectedPlanet.GetPlanetInfo().resourceValues[(int)selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd]] + "/" + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd];
+        GetUpgradeButton(0).transform.GetChild(2).GetComponent<Image>().sprite = resourceIcons[(int)selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd]];
+
+        RequirementsText(1).text = selectedPlanet.GetPlanetInfo().resourceValues[(int)selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor]] + "/" + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTierStor];
+        GetUpgradeButton(1).transform.GetChild(2).GetComponent<Image>().sprite = resourceIcons[(int)selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor]];
+
+        //second requirement for production
+        if (selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1] != PlanetScript.ERESOURCES.None)
+        {
+            RequirementsText(0).text += "\n" + selectedPlanet.GetPlanetInfo().resourceValues[(int)selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1]] + "/" + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd + 1];
+            GetUpgradeButton(0).transform.GetChild(3).gameObject.SetActive(true);
+            GetUpgradeButton(0).transform.GetChild(3).GetComponent<Image>().sprite = resourceIcons[(int)selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1]];
+        }
+        else { GetUpgradeButton(0).transform.GetChild(3).gameObject.SetActive(false); }
+
+        //second requirement for storage
+        if (selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor + 1] != PlanetScript.ERESOURCES.None)
+        {
+            RequirementsText(1).text += "\n" + selectedPlanet.GetPlanetInfo().resourceValues[(int)selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor + 1]] + "/" + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTierStor + 1];
+            GetUpgradeButton(1).transform.GetChild(3).gameObject.SetActive(true);
+            GetUpgradeButton(1).transform.GetChild(3).GetComponent<Image>().sprite = resourceIcons[(int)selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor + 1]];
+        }
+        else { GetUpgradeButton(1).transform.GetChild(3).gameObject.SetActive(false); }
+
+        descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
+
+        //upgrade button sprites
+        GetUpgradeButton(0).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyProduction(selectedPlanet.GetLevelProdTier() * 2))];
+        GetUpgradeButton(1).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2))];
+    }
+
+    public TextMeshProUGUI RequirementsText(int _i)
+    {
+        return GetUpgradeButton(_i).transform.GetChild(1).GetComponent<TextMeshProUGUI>();
+    }
+
+    public Image GetUpgradeButton(int _i)
+    {
+        if(selectedPlanet.GetSpaceStationInfo().isSpaceStation)
+        {
+            return upgradeButtons[_i + 2];
+        }
+        else
+        {
+            return upgradeButtons[_i];
+        }
     }
 
     public void UpdateResourcesTab()
     {
         for(int i = 0; i < resourceContent.transform.childCount; i++)
         {
-            resourceContent.transform.GetChild(i).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + (int)selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + (int)selectedPlanet.GetPlanetInfo().resourceMax[i];
+            resourceContent.transform.GetChild(i).GetChild(1).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + (int)selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + (int)selectedPlanet.GetPlanetInfo().resourceMax[i];
         }
     }
 
@@ -158,7 +233,7 @@ public class UIManager : MonoBehaviour
 
     public void UpdateUnitsText()
     {
-        unitsText.text = "Units:\n" + selectedPlanet.GetSpaceStationInfo().units + "/" + selectedPlanet.GetSpaceStationInfo().unitMax;
+        unitsText.text = "" + selectedPlanet.GetSpaceStationInfo().units + "/" + selectedPlanet.GetSpaceStationInfo().unitMax;
     }
 
     public Sprite[] GetResourceIcon()
@@ -166,9 +241,55 @@ public class UIManager : MonoBehaviour
         return resourceIcons;
     }
 
+    public void SetUnlockedResources(PlanetScript.ERESOURCES _resource)
+    {
+        unlockedResources.Add(_resource);
+        AddNotificiton("New resource added", notificationIcon);
+    }
+    public List<PlanetScript.ERESOURCES> GetUnlockedResources()
+    {
+        return unlockedResources;
+    }
+
+    public void AddNotificiton(string _text, Sprite _image)
+    {
+        notificationTextList.Add(_text);
+        notificationImageList.Add(_image);
+
+        //if there aren't already notifications 
+        if (notificationTextList.Count <= 1)
+        {
+            StartCoroutine(ShowNotification());
+        }
+    }
+
+    //show notification
+    public IEnumerator ShowNotification()
+    {
+        //loop time all notifications are done
+        if (notificationTextList.Count >= 1)
+        {
+            notificationBar.SetActive(true);
+            notificationBar.transform.GetChild(0).GetComponent<Image>().sprite = notificationImageList[0]; //image of notification bar
+            notificationBar.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = notificationTextList[0]; //text of notification bar
+
+            yield return new WaitForSeconds(notificationWait);
+
+            notificationImageList.RemoveAt(0);
+            notificationTextList.RemoveAt(0);
+
+            StartCoroutine(ShowNotification());
+        }
+        else
+        {
+            notificationBar.SetActive(false);
+        }
+    }
+
     public void ShowTab(int _i)
     {
-        if(selectedPlanet.GetSpaceStationInfo().isSpaceStation)
+        //if space station and click on upgrade then set tab to space station upgrade tab instead
+        if(selectedPlanet.GetSpaceStationInfo().isSpaceStation && _i == 0)
         {
             _i = 3;
         }
@@ -213,8 +334,6 @@ public class UIManager : MonoBehaviour
     }
     public void DeployPressed()
     {
-        //work here
-        
         attackPlanetScreen.SetActive(true);
 
         //clear old content
@@ -223,12 +342,13 @@ public class UIManager : MonoBehaviour
             Destroy(child.gameObject);
         }
 
+        //populate new content
         for (int i = 0; i < transportManager.GetLockedPlanetObjects().Length; i++)
         {
             GameObject planetAttackObj = Instantiate(planetAttackButton, new Vector3(0, 0, 0), Quaternion.identity);
             planetAttackObj.transform.SetParent(attackPlanetContent.transform);
             planetAttackObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(3, -30 - (50 * i));
-            planetAttackObj.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 50);
+            planetAttackObj.GetComponent<RectTransform>().sizeDelta = new Vector2(270, 50);
             planetAttackObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
             planetAttackObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
             planetAttackObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
@@ -236,7 +356,7 @@ public class UIManager : MonoBehaviour
             int x = i;
             planetAttackObj.transform.GetComponent<Button>().onClick.AddListener(delegate { AttackPlanetPressed(x); });
 
-            planetAttackObj.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().defensePoints + "/" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().defenseMax;
+            planetAttackObj.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().defensePoints + "/\n" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().defenseMax;
             planetAttackObj.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "" + transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().name;
             planetAttackObj.transform.GetChild(0).GetComponent<Image>().sprite = transportManager.GetLockedPlanetObjects()[i].GetPlanetInfo().sprite;
         }
@@ -246,10 +366,15 @@ public class UIManager : MonoBehaviour
 
     public void UpdateLevels()
     {
-        levelSliderProduction.value = selectedPlanet.GetPlanetInfo().levelProd % 5;
-        levelSliderProduction.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + selectedPlanet.GetPlanetInfo().levelProd;
-        levelSliderStorage.value = selectedPlanet.GetPlanetInfo().levelStor % 5;
-        levelSliderStorage.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + selectedPlanet.GetPlanetInfo().levelStor;
+        //level tier
+        levelTierSliderProduction.value = selectedPlanet.GetPlanetInfo().levelProd % 5;
+        levelTierSliderProduction.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + selectedPlanet.GetPlanetInfo().levelProd;
+        levelTierSliderStorage.value = selectedPlanet.GetPlanetInfo().levelStor % 5;
+        levelTierSliderStorage.transform.GetChild(2).GetComponent<TextMeshProUGUI>().text = "" + selectedPlanet.GetPlanetInfo().levelStor;
+
+        //level 
+        levelSliderProduction.value = selectedPlanet.GetLevelProdTier();
+        levelSliderStorage.value = selectedPlanet.GetLevelStorTier();
     }
 
     public void DoubleSpeedPressed(float _time)
@@ -264,9 +389,9 @@ public class UIManager : MonoBehaviour
             transportManager.GetPlanetObjects()[_planet].gameObject,
             transportManager.GetPlanetObjects()[selectedPlanet.GetPlanetInfo().planetNum].gameObject,
             _resource,
-            (int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
+            (int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]); //double check this
 
-        selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[selectedPlanet.GetPlanetInfo().planetNum]);
+        selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]);
 
         CancelResourceDelivery();
     }
@@ -280,6 +405,15 @@ public class UIManager : MonoBehaviour
         CancelResourceDelivery();
     }
 
+    public PlanetScript GetPlanetScript()
+    {
+        return selectedPlanet;
+    }
+
+    public void SettingButtonPressed(bool _active)
+    {
+        settingsScreen.SetActive(_active);
+    }
 
     void ButtonPurchaseSpawn(bool _worked, Vector3 _pos)
     {

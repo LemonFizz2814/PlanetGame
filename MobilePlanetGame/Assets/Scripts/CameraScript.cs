@@ -10,42 +10,47 @@ public class CameraScript : MonoBehaviour
     [SerializeField] private float camStartingSize;
     [SerializeField] private float camZoomMax;
     [SerializeField] private float camZoomMin;
+
+    private Vector3 origin;
+    private Vector3 difference;
+    private Vector3 defaultPos;
+
+    bool drag = false;
+
     protected Plane plane;
 
     private bool canMove = true;
 
     private int unlockedPlanet = 0;
 
-    private float[,] boundary = { { 4, 2 }, { 4, 2 }, { 4, 2 }, { 4, 2 }};
+    private float[,] boundary = { { 4.5f, 2.5f }, { 4, 2 }, { 4, 2 }, { 4, 2 }};
 
     private void Start()
     {
         cam.orthographicSize = camStartingSize;
+        defaultPos = cam.transform.localPosition;
     }
 
     private void Update()
     {
         if (canMove)
         {
-            //Update Plane
-            if (Input.touchCount >= 1)
-            {
-                plane.SetNormalAndPosition(transform.up, transform.position);
-            }
-
-            Vector3 Delta1 = Vector3.zero;
-            Vector3 Delta2 = Vector3.zero;
-
             //mouse controls
 
             if (Input.GetMouseButton(0))
             {
-                Delta1 = new Vector2(Input.mousePosition.x - Screen.width / 2, Input.mousePosition.y - Screen.height / 2);
-                Delta1 /= scrollSpeed;
-                //MoveCamera(Delta1);
-                transform.Translate(Delta1, Space.World);
-            }
+                difference = cam.ScreenToWorldPoint(Input.mousePosition) - cam.transform.position;
 
+                if(!drag)
+                {
+                    drag = true;
+                    origin = cam.ScreenToWorldPoint(Input.mousePosition);
+                }
+            }
+            else
+            {
+                drag = false;
+            }
             if (Input.mouseScrollDelta.y != 0.0f)
             {
                 SetCamZoom(cam.orthographicSize - Input.mouseScrollDelta.y);
@@ -55,15 +60,40 @@ public class CameraScript : MonoBehaviour
             //android controls
 
             //Scroll
-            if (Input.touchCount >= 1)
+            if (Input.touchCount == 1)
             {
-                Delta1 = PlanePositionDelta(Input.GetTouch(0));
+                if (Input.GetTouch(0).phase == TouchPhase.Moved)
+                {
+                    difference = cam.ScreenToWorldPoint(Input.GetTouch(0).position) - cam.transform.position;
+
+                    if (!drag)
+                    {
+                        drag = true;
+                        origin = cam.ScreenToWorldPoint(Input.GetTouch(0).position);
+                    }
+                }
+                else
+                {
+                    drag = false;
+                }
+
+                /*Delta1 = PlanePositionDelta(Input.GetTouch(0));
 
                 if (Input.GetTouch(0).phase == TouchPhase.Moved)
                 {
                     cam.transform.Translate(Delta1, Space.World);
-                }
+                }*/
             }
+
+            if (drag)
+            {
+                cam.transform.position = origin - difference;
+                cam.transform.position = new Vector3(
+                    Mathf.Clamp(cam.transform.position.x, -boundary[unlockedPlanet, 0], boundary[unlockedPlanet, 0]),
+                    Mathf.Clamp(cam.transform.position.y, -boundary[unlockedPlanet, 1], boundary[unlockedPlanet, 1]),
+                    -10);
+            }
+
 
             //Pinch
             if (Input.touchCount >= 2)
@@ -87,22 +117,6 @@ public class CameraScript : MonoBehaviour
                 cam.transform.position = Vector3.LerpUnclamped(pos1, cam.transform.position, 1 / zoom);
             }
         }
-    }
-
-    protected Vector3 PlanePositionDelta(Touch touch)
-    {
-        //not moved
-        if (touch.phase != TouchPhase.Moved)
-            return Vector3.zero;
-
-        //delta
-        var rayBefore = cam.ScreenPointToRay(touch.position - touch.deltaPosition);
-        var rayNow = cam.ScreenPointToRay(touch.position);
-        if (plane.Raycast(rayBefore, out var enterBefore) && plane.Raycast(rayNow, out var enterNow))
-            return rayBefore.GetPoint(enterBefore) - rayNow.GetPoint(enterNow);
-
-        //not on plane
-        return Vector3.zero;
     }
 
     protected Vector3 PlanePosition(Vector2 screenPos)
@@ -142,5 +156,7 @@ public class CameraScript : MonoBehaviour
     public void SetCanMove(bool _move)
     {
         canMove = _move;
+
+        cam.transform.localPosition = defaultPos;
     }
 }

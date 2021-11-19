@@ -18,6 +18,15 @@ public class TransportManager : MonoBehaviour
     {
         //unlockedPlanetObjects = planetObjects;
         //lockedPlanetObjects = planetObjects;
+        for (int i = 0; i < planetObjects.Length; i++)
+        {
+            if (planetObjects[i].GetPlanetInfo().hasBeenUnlocked)
+            {
+                AddToUnlockedPlanet(true, planetObjects[i]);
+            } else {
+                AddToLockedPlanet(true, planetObjects[i]);
+            }
+        }
     }
 
     public PlanetScript[] GetPlanetObjects()
@@ -30,7 +39,7 @@ public class TransportManager : MonoBehaviour
     }
     public PlanetScript[] GetLockedPlanetObjects()
     {
-        return unlockedPlanetObjects.ToArray();
+        return lockedPlanetObjects.ToArray();
     }
 
     public void AddToUnlockedPlanet(bool _add, PlanetScript _planet)
