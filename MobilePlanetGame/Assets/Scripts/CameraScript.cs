@@ -20,101 +20,99 @@ public class CameraScript : MonoBehaviour
     protected Plane plane;
 
     private bool canMove = true;
+    private bool isAndroid = false;
 
     private int unlockedPlanet = 0;
 
-    private float[,] boundary = { { 4.5f, 2.5f }, { 4, 2 }, { 4, 2 }, { 4, 2 }};
+    private float[,] boundary = { { 4.5f, 2.5f }, { 5, 2.5f }, { 6, 2.5f }, { 7, 2.5f } };
 
     private void Start()
     {
         cam.orthographicSize = camStartingSize;
         defaultPos = cam.transform.localPosition;
+
+        isAndroid = (Application.platform == RuntimePlatform.Android);
     }
 
     private void Update()
     {
         if (canMove)
         {
-            //mouse controls
-
-            if (Input.GetMouseButton(0))
+            if (isAndroid) //android controls
             {
-                difference = cam.ScreenToWorldPoint(Input.mousePosition) - cam.transform.position;
-
-                if(!drag)
+                if (Input.touchCount == 1)
                 {
-                    drag = true;
-                    origin = cam.ScreenToWorldPoint(Input.mousePosition);
+                    if (Input.GetTouch(0).phase == TouchPhase.Moved)
+                    {
+                        difference = cam.ScreenToWorldPoint(Input.GetTouch(0).position) - cam.transform.position;
+
+                        if (!drag)
+                        {
+                            drag = true;
+                            origin = cam.ScreenToWorldPoint(Input.GetTouch(0).position);
+                        }
+                    }
+                    else
+                    {
+                        drag = false;
+                    }
+
+                    //Pinch zoom controls
+                    if (Input.touchCount >= 2)
+                    {
+                        var pos1 = PlanePosition(Input.GetTouch(0).position);
+                        var pos2 = PlanePosition(Input.GetTouch(1).position);
+                        var pos1b = PlanePosition(Input.GetTouch(0).position - Input.GetTouch(0).deltaPosition);
+                        var pos2b = PlanePosition(Input.GetTouch(1).position - Input.GetTouch(1).deltaPosition);
+
+                        //calc zoom
+                        var zoom = Vector3.Distance(pos1, pos2) /
+                                   Vector3.Distance(pos1b, pos2b);
+
+                        //edge case
+                        if (zoom == 0 || zoom > 10)
+                        {
+                            return;
+                        }
+
+                        //Move cam amount the mid ray
+                        SetCamZoom(cam.orthographicSize - zoom);
+                        cam.transform.position = Vector3.LerpUnclamped(pos1, cam.transform.position, 1 / zoom);
+                    }
                 }
-            }
-            else
-            {
-                drag = false;
-            }
-            if (Input.mouseScrollDelta.y != 0.0f)
-            {
-                SetCamZoom(cam.orthographicSize - Input.mouseScrollDelta.y);
-            }
 
-
-            //android controls
-
-            //Scroll
-            if (Input.touchCount == 1)
+            }
+            else //mouse controls
             {
-                if (Input.GetTouch(0).phase == TouchPhase.Moved)
+                if (Input.GetMouseButton(0))
                 {
-                    difference = cam.ScreenToWorldPoint(Input.GetTouch(0).position) - cam.transform.position;
+                    difference = cam.ScreenToWorldPoint(Input.mousePosition) - cam.transform.position;
 
                     if (!drag)
                     {
                         drag = true;
-                        origin = cam.ScreenToWorldPoint(Input.GetTouch(0).position);
+                        origin = cam.ScreenToWorldPoint(Input.mousePosition);
                     }
                 }
                 else
                 {
                     drag = false;
                 }
-
-                /*Delta1 = PlanePositionDelta(Input.GetTouch(0));
-
-                if (Input.GetTouch(0).phase == TouchPhase.Moved)
+                //Scroll
+                if (Input.mouseScrollDelta.y != 0.0f)
                 {
-                    cam.transform.Translate(Delta1, Space.World);
-                }*/
+                    SetCamZoom(cam.orthographicSize - Input.mouseScrollDelta.y);
+                }
             }
 
+            //drag controls
             if (drag)
             {
                 cam.transform.position = origin - difference;
                 cam.transform.position = new Vector3(
                     Mathf.Clamp(cam.transform.position.x, -boundary[unlockedPlanet, 0], boundary[unlockedPlanet, 0]),
-                    Mathf.Clamp(cam.transform.position.y, -boundary[unlockedPlanet, 1], boundary[unlockedPlanet, 1]),
+                    Mathf.Clamp(cam.transform.position.y, -3, boundary[unlockedPlanet, 1]),
                     -10);
-            }
-
-
-            //Pinch
-            if (Input.touchCount >= 2)
-            {
-                var pos1 = PlanePosition(Input.GetTouch(0).position);
-                var pos2 = PlanePosition(Input.GetTouch(1).position);
-                var pos1b = PlanePosition(Input.GetTouch(0).position - Input.GetTouch(0).deltaPosition);
-                var pos2b = PlanePosition(Input.GetTouch(1).position - Input.GetTouch(1).deltaPosition);
-
-                //calc zoom
-                var zoom = Vector3.Distance(pos1, pos2) /
-                           Vector3.Distance(pos1b, pos2b);
-
-                //edge case
-                if (zoom == 0 || zoom > 10)
-                {
-                    return;
-                }
-
-                //Move cam amount the mid ray
-                cam.transform.position = Vector3.LerpUnclamped(pos1, cam.transform.position, 1 / zoom);
             }
         }
     }

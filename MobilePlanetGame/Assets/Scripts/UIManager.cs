@@ -201,6 +201,7 @@ public class UIManager : MonoBehaviour
     {
         for(int i = 0; i < resourceContent.transform.childCount; i++)
         {
+            print("i " + i + " resource " + ((PlanetScript.ERESOURCES)i).ToString());
             resourceContent.transform.GetChild(i).GetChild(1).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + (int)selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + (int)selectedPlanet.GetPlanetInfo().resourceMax[i];
         }
     }
