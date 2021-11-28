@@ -45,7 +45,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Sprite[] resourceIcons;
     [SerializeField] private Sprite[] buttonPurchaseSprites;
     [SerializeField] private Sprite[] buttonReadySprites;
+
     [SerializeField] private Sprite notificationIcon;
+    [SerializeField] private Sprite crossIcon;
 
     [SerializeField] private float notificationWait;
 
@@ -106,7 +108,7 @@ public class UIManager : MonoBehaviour
         SetActiveInfoBox(true);
 
         selectedPlanet = _planetScript;
-        cameraScript.MoveCamera(new Vector3(selectedPlanet.transform.position.x, selectedPlanet.transform.position.y, -10));
+        cameraScript.MoveCamera(new Vector3(selectedPlanet.transform.position.x, selectedPlanet.transform.position.y - 2.8f, -10));
         cameraScript.SetCamZoom(cameraScript.GetStartingZoom());
 
         UpdateUnitsText();
@@ -222,7 +224,7 @@ public class UIManager : MonoBehaviour
     }
     public void UpgradeTransportSpeedPressed()
     {
-        //update values -----------
+        //update values
         transportManager.UpgradeTransportSpeed(1);
     }
 
@@ -230,6 +232,7 @@ public class UIManager : MonoBehaviour
     {
         ButtonPurchaseSpawn(selectedPlanet.UnitPurchased(), _obj.GetComponent<RectTransform>().anchoredPosition);
         UpdateUnitsText();
+        UpdateRequirementsText();
     }
 
     public void UpdateUnitsText()
@@ -242,10 +245,15 @@ public class UIManager : MonoBehaviour
         return resourceIcons;
     }
 
-    public void SetUnlockedResources(PlanetScript.ERESOURCES _resource)
+    public void SetUnlockedResources(PlanetScript.ERESOURCES _resource, bool _notifity)
     {
-        unlockedResources.Add(_resource);
-        AddNotificiton("New resource added", notificationIcon);
+        //make sure resource isn't already contained in list
+        if (!unlockedResources.Contains(_resource))
+        {
+            unlockedResources.Add(_resource);
+
+            if (_notifity) { AddNotificiton("New resource unlocked: " + _resource.ToString(), resourceIcons[(int)_resource]); }
+        }
     }
     public List<PlanetScript.ERESOURCES> GetUnlockedResources()
     {
@@ -314,7 +322,20 @@ public class UIManager : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        for (int i = 0; i < transportManager.GetUnlockedPlanetObjects().Length; i++)
+        List<PlanetScript> planetList = new List<PlanetScript>();
+        planetList.AddRange(transportManager.GetUnlockedPlanetObjects());
+
+        //remove selected planet from the list
+        for (int i = 0; i < planetList.Count; i++)
+        {
+            if (planetList[i] == selectedPlanet)
+            {
+                planetList.RemoveAt(i);
+                break;
+            }
+        }
+
+        for (int i = 0; i < planetList.Count; i++)
         {
             GameObject planetDeliverObj = Instantiate(planetDeliveryButton, new Vector3(0, 0, 0), Quaternion.identity);
             planetDeliverObj.transform.SetParent(resourceDeliveryContent.transform);
@@ -325,13 +346,12 @@ public class UIManager : MonoBehaviour
             planetDeliverObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
 
             int x = i;
-            planetDeliverObj.transform.GetComponent<Button>().onClick.AddListener(delegate { PlanetDeliveryPressed(x, _resource); });
+            planetDeliverObj.transform.GetComponent<Button>().onClick.AddListener(delegate { PlanetDeliveryPressed(planetList[x].gameObject, _resource); });
 
-            planetDeliverObj.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "" + ((i != selectedPlanet.GetPlanetInfo().planetNum)? transportManager.GetUnlockedPlanetObjects()[i].GetPlanetInfo().name : "-------");
-            planetDeliverObj.transform.GetChild(0).GetComponent<Image>().sprite = transportManager.GetUnlockedPlanetObjects()[i].GetPlanetInfo().sprite;
+            planetDeliverObj.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = planetList[i].GetPlanetInfo().name;
+            planetDeliverObj.transform.GetChild(0).GetComponent<Image>().sprite = planetList[i].GetPlanetInfo().sprite;
         }
-
-        resourceDeliveryContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, (50 * transportManager.GetUnlockedPlanetObjects().Length) + 5);
+        resourceDeliveryContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, (50 * planetList.Count) + 5);
     }
     public void DeployPressed()
     {
@@ -383,14 +403,16 @@ public class UIManager : MonoBehaviour
         selectedPlanet.SetDoubleSpeed(_time);
     }
 
-    public void PlanetDeliveryPressed(int _planet, PlanetScript.ERESOURCES _resource)
+    public void PlanetDeliveryPressed(GameObject _planetObj, PlanetScript.ERESOURCES _resource)
     {
-        print("planet selected " + _planet);
-        transportManager.SpawnTransport(
-            transportManager.GetPlanetObjects()[_planet].gameObject,
+        if(!transportManager.SpawnTransport(
+            _planetObj,
             transportManager.GetPlanetObjects()[selectedPlanet.GetPlanetInfo().planetNum].gameObject,
             _resource,
-            (int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]); //double check this
+            (int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]))
+        {
+            AddNotificiton("Can't have more than " + transportManager.GetMaxTransport() + " transport vessels active", crossIcon);
+        }
 
         selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]);
 
@@ -401,8 +423,9 @@ public class UIManager : MonoBehaviour
     {
         //work here
         print("planet selected " + _planet);
-        transportManager.GetPlanetObjects()[_planet].RemoveDefensePoints(selectedPlanet.GetSpaceStationInfo().units);
+        transportManager.GetLockedPlanetObjects()[_planet].RemoveDefensePoints(selectedPlanet.GetSpaceStationInfo().units);
         selectedPlanet.GetSpaceStationInfo().units = 0;
+        UpdateUnitsText();
         CancelResourceDelivery();
     }
 

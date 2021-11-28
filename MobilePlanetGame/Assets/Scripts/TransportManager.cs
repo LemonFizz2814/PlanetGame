@@ -18,6 +18,8 @@ public class TransportManager : MonoBehaviour
     {
         //unlockedPlanetObjects = planetObjects;
         //lockedPlanetObjects = planetObjects;
+
+        //add all planets to unlocked to locked planet lists
         for (int i = 0; i < planetObjects.Length; i++)
         {
             if (planetObjects[i].GetPlanetInfo().hasBeenUnlocked)
@@ -27,6 +29,11 @@ public class TransportManager : MonoBehaviour
                 AddToLockedPlanet(true, planetObjects[i]);
             }
         }
+    }
+
+    public int GetMaxTransport()
+    {
+        return maxAmountOfTransports;
     }
 
     public PlanetScript[] GetPlanetObjects()
@@ -79,12 +86,17 @@ public class TransportManager : MonoBehaviour
         //transportSpeed += _i;
     }
 
-    public void SpawnTransport(GameObject _planet, GameObject _previousPlanet, PlanetScript.ERESOURCES _resource, int _resourceAmount)
+    public bool SpawnTransport(GameObject _planet, GameObject _previousPlanet, PlanetScript.ERESOURCES _resource, int _resourceAmount)
     {
-        if (GameObject.FindGameObjectsWithTag("Vessel").Length <= maxAmountOfTransports)
+        //check if more than the amount of total transports are already in use
+        if (GameObject.FindGameObjectsWithTag("Vessel").Length < maxAmountOfTransports)
         {
             GameObject vesselObj = Instantiate(transportVessel, _planet.transform.position, Quaternion.identity);
             vesselObj.GetComponent<VesselScript>().MoveToPlanet(_planet, _previousPlanet, _resource, _resourceAmount, transportSpeed);
+
+            return true;
         }
+
+        return false;
     }
 }

@@ -52,6 +52,8 @@ public class PlanetScript : MonoBehaviour
         [NonSerialized] public int defensePoints;
         public int defenseMax;
 
+        public ERESOURCES[] gainedResources;
+
         [TextArea(8, 10)] public string descriptionText;
     };
 
@@ -252,6 +254,15 @@ public class PlanetScript : MonoBehaviour
 
     public bool GainResourceExternal(ERESOURCES _resource, int _amount)
     {
+        if(_amount > 0)
+        {
+            uiManager.AddNotificiton(_amount + " of " + _resource.ToString() + " arrived at " + planetInfo.name, planetInfo.sprite);
+        }
+        else
+        {
+            uiManager.AddNotificiton(_amount + " of " + _resource.ToString() + " transported from " + planetInfo.name, planetInfo.sprite);
+        }
+
         if (planetInfo.resourceValues[(int)_resource] + _amount <= planetInfo.resourceMax[(int)_resource])
         {
             //do gain here
@@ -353,7 +364,6 @@ public class PlanetScript : MonoBehaviour
             planetInfo.resourceValues[(int)spaceStationInfo.unitBuyResource[0]] -= spaceStationInfo.unitBuyAmount[0];
 
             spaceStationInfo.units += spaceStationInfo.unitGain;
-            uiManager.UpdateUnitsText();
         }
         else
         {
@@ -436,17 +446,24 @@ public class PlanetScript : MonoBehaviour
     {
         GetPlanetInfo().defensePoints -= _amount;
 
+        uiManager.AddNotificiton(planetInfo.name + " defenses reduced by " + _amount, planetInfo.dullSprite);
+
         //check if unlocked
-        if(GetPlanetInfo().defensePoints <= 0)
+        if (GetPlanetInfo().defensePoints <= 0)
         {
             GetPlanetInfo().hasBeenUnlocked = true;
             SetUpProductionText();
             GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
 
-            uiManager.AddNotificiton("New Planet Discovered - " + planetInfo.planetNum, planetInfo.sprite);
+            uiManager.AddNotificiton("New Planet Discovered - " + planetInfo.name, planetInfo.sprite);
 
             transportManager.AddToLockedPlanet(false, this);
             transportManager.AddToUnlockedPlanet(true, this);
+
+            for(int i = 0; i < planetInfo.gainedResources.Length; i++)
+            {
+                uiManager.SetUnlockedResources(planetInfo.gainedResources[i], true);
+            }
         }
 
         UpdateDefensePointsText();

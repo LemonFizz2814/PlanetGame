@@ -23,9 +23,9 @@ public class SaveScript : MonoBehaviour
             }
 
             //set unlocked resources
-            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Timber);
-            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Water);
-            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Sulphur);
+            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Timber, false);
+            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Water, false);
+            uiManager.SetUnlockedResources(PlanetScript.ERESOURCES.Sulphur, false);
         }
     }
 

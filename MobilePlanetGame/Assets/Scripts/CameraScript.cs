@@ -5,7 +5,7 @@ using UnityEngine;
 public class CameraScript : MonoBehaviour
 {
     //#if UNITY_IOS || UNITY_ANDROID
-    [SerializeField] private Camera cam;
+    private Camera cam;
     [SerializeField] private float scrollSpeed;
     [SerializeField] private float camStartingSize;
     [SerializeField] private float camZoomMax;
@@ -13,7 +13,7 @@ public class CameraScript : MonoBehaviour
 
     private Vector3 origin;
     private Vector3 difference;
-    private Vector3 defaultPos;
+    private Vector3 prevPos;
 
     bool drag = false;
 
@@ -28,8 +28,9 @@ public class CameraScript : MonoBehaviour
 
     private void Start()
     {
+        cam = gameObject.GetComponent<Camera>();
+
         cam.orthographicSize = camStartingSize;
-        defaultPos = cam.transform.localPosition;
 
         isAndroid = (Application.platform == RuntimePlatform.Android);
     }
@@ -44,7 +45,7 @@ public class CameraScript : MonoBehaviour
                 {
                     if (Input.GetTouch(0).phase == TouchPhase.Moved)
                     {
-                        difference = cam.ScreenToWorldPoint(Input.GetTouch(0).position) - cam.transform.position;
+                        difference = cam.ScreenToWorldPoint(Input.GetTouch(0).position) - transform.position;
 
                         if (!drag)
                         {
@@ -77,7 +78,7 @@ public class CameraScript : MonoBehaviour
 
                         //Move cam amount the mid ray
                         SetCamZoom(cam.orthographicSize - zoom);
-                        cam.transform.position = Vector3.LerpUnclamped(pos1, cam.transform.position, 1 / zoom);
+                        transform.position = Vector3.LerpUnclamped(pos1, transform.position, 1 / zoom);
                     }
                 }
 
@@ -86,7 +87,7 @@ public class CameraScript : MonoBehaviour
             {
                 if (Input.GetMouseButton(0))
                 {
-                    difference = cam.ScreenToWorldPoint(Input.mousePosition) - cam.transform.position;
+                    difference = cam.ScreenToWorldPoint(Input.mousePosition) - transform.position;
 
                     if (!drag)
                     {
@@ -108,10 +109,10 @@ public class CameraScript : MonoBehaviour
             //drag controls
             if (drag)
             {
-                cam.transform.position = origin - difference;
-                cam.transform.position = new Vector3(
-                    Mathf.Clamp(cam.transform.position.x, -boundary[unlockedPlanet, 0], boundary[unlockedPlanet, 0]),
-                    Mathf.Clamp(cam.transform.position.y, -3, boundary[unlockedPlanet, 1]),
+                transform.position = origin - difference;
+                transform.position = new Vector3(
+                    Mathf.Clamp(transform.position.x, -boundary[unlockedPlanet, 0], boundary[unlockedPlanet, 0]),
+                    Mathf.Clamp(transform.position.y, -3, boundary[unlockedPlanet, 1]),
                     -10);
             }
         }
@@ -129,10 +130,8 @@ public class CameraScript : MonoBehaviour
 
     public void MoveCamera(Vector3 _pos)
     {
-        /*transform.position = new Vector3(
-            Mathf.Clamp(_pos.x, -boundary[unlockedPlanet, 0], boundary[unlockedPlanet, 0]),
-            Mathf.Clamp(_pos.y, -boundary[unlockedPlanet, 1], boundary[unlockedPlanet, 1]),
-            -10);*/
+        prevPos = transform.position;
+        print("PrevPos " + prevPos);
         transform.position = new Vector3(_pos.x, _pos.y,  -10);
     }
 
@@ -155,6 +154,9 @@ public class CameraScript : MonoBehaviour
     {
         canMove = _move;
 
-        cam.transform.localPosition = defaultPos;
+        if(_move)
+        {
+            transform.position = prevPos;
+        }
     }
 }
