@@ -35,6 +35,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject planetAttackButton;
 
     [SerializeField] private GameObject notificationBar;
+    [SerializeField] private GameObject planetUnlockedPopUp;
 
     [SerializeField] private GameObject buttonPurchase;
 
@@ -64,7 +65,7 @@ public class UIManager : MonoBehaviour
     {
         SetActiveInfoBox(false);
         SettingButtonPressed(false);
-        notificationBar.SetActive(false);
+        //notificationBar.SetActive(true);
         resourceDeliveryScreen.SetActive(false);
 
         resourceLength = Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length - 1;
@@ -85,6 +86,7 @@ public class UIManager : MonoBehaviour
         }
 
         AddNotificiton("Welcome", notificationIcon);
+        SetPlanetPopUpActive(false);
     }
 
     public void SetActiveInfoBox(bool _active)
@@ -178,8 +180,8 @@ public class UIManager : MonoBehaviour
         descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
 
         //upgrade button sprites
-        GetUpgradeButton(0).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyProduction(selectedPlanet.GetLevelProdTier() * 2))];
-        GetUpgradeButton(1).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2))];
+        GetUpgradeButton(0).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyProduction(selectedPlanet.GetLevelProdTier() * 2) && CheckUnitLimit())];
+        GetUpgradeButton(1).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2) && CheckUnitLimit())];
     }
 
     public TextMeshProUGUI RequirementsText(int _i)
@@ -240,6 +242,11 @@ public class UIManager : MonoBehaviour
         unitsText.text = "" + selectedPlanet.GetSpaceStationInfo().units + "/" + selectedPlanet.GetSpaceStationInfo().unitMax;
     }
 
+    bool CheckUnitLimit()
+    {
+        return (selectedPlanet.GetSpaceStationInfo().units < selectedPlanet.GetSpaceStationInfo().unitMax || selectedPlanet.GetSpaceStationInfo().units == 0);
+    }
+
     public Sprite[] GetResourceIcon()
     {
         return resourceIcons;
@@ -278,7 +285,7 @@ public class UIManager : MonoBehaviour
         //loop time all notifications are done
         if (notificationTextList.Count >= 1)
         {
-            notificationBar.SetActive(true);
+            notificationBar.GetComponent<Animator>().SetBool("Open", true);
             notificationBar.transform.GetChild(0).GetComponent<Image>().sprite = notificationImageList[0]; //image of notification bar
             notificationBar.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = notificationTextList[0]; //text of notification bar
 
@@ -287,11 +294,15 @@ public class UIManager : MonoBehaviour
             notificationImageList.RemoveAt(0);
             notificationTextList.RemoveAt(0);
 
+            if (notificationTextList.Count >= 1) { notificationBar.GetComponent<Animator>().SetTrigger("Update"); }
+
             StartCoroutine(ShowNotification());
         }
         else
         {
-            notificationBar.SetActive(false);
+            notificationBar.GetComponent<Animator>().SetBool("Open", false);
+            notificationBar.GetComponent<Animator>().SetTrigger("Close");
+            //notificationBar.SetActive(false);
         }
     }
 
@@ -413,10 +424,24 @@ public class UIManager : MonoBehaviour
         {
             AddNotificiton("Can't have more than " + transportManager.GetMaxTransport() + " transport vessels active", crossIcon);
         }
-
-        selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]);
+        else
+        {
+            selectedPlanet.GainResourceExternal(_resource, -(int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]);
+        }
 
         CancelResourceDelivery();
+    }
+
+    public void SetPlanetPopUpActive(bool _active)
+    {
+        planetUnlockedPopUp.SetActive(_active);
+    }
+
+    public void ShowPlanetPopUp(PlanetScript _planet)
+    {
+        SetPlanetPopUpActive(true);
+        planetUnlockedPopUp.transform.GetChild(1).GetComponent<Image>().sprite = _planet.GetPlanetInfo().sprite;
+        planetUnlockedPopUp.transform.GetChild(3).GetComponent<TextMeshProUGUI>().text = _planet.GetPlanetInfo().name;
     }
 
     public void AttackPlanetPressed(int _planet)
@@ -451,5 +476,6 @@ public class UIManager : MonoBehaviour
     {
         resourceDeliveryScreen.SetActive(false);
         attackPlanetScreen.SetActive(false);
+        UpdateRequirementsText();
     }
 }

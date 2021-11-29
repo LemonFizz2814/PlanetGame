@@ -10,11 +10,11 @@ public class PlanetScript : MonoBehaviour
         Water,
         Timber,
         Sulphur,
-        Copper,
         Oil,
+        Copper,
         Uranium,
-        Nitrogen,
         Gold,
+        Nitrogen,
         Cosmic_Quartz,
         Space_Dust,
         None,
@@ -222,14 +222,14 @@ public class PlanetScript : MonoBehaviour
     //spawn in collected text on planet of resource
     void SpawnCollectedText(int _resource, float _gain)
     {
-        Vector2 pos = new Vector2(
+        /*Vector2 pos = new Vector2(
             transform.position.x + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand),
-            transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));
-        GameObject textObj = Instantiate(collectedTextPrefab, pos, Quaternion.identity);
+            transform.position.y + UnityEngine.Random.Range(collectedSpawnRand, -collectedSpawnRand));*/
+        GameObject textObj = Instantiate(collectedTextPrefab, new Vector3(0, 0, 0), Quaternion.identity);
         textObj.GetComponent<TextMesh>().text = "+" + _gain;
-        textObj.transform.SetParent(transform);
+        if (planetInfo.productionResources.Length > 0) { textObj.transform.SetParent(productionTextsParent.GetChild(Array.IndexOf(planetInfo.productionResources, (ERESOURCES)_resource))); }
         //textObj.transform.GetChild(0).localPosition = new Vector3(0, -1.75f - (Array.IndexOf(uiManager.GetResourceIcon(), _resource) * 0.5f), 0);//new Vector3(4 + (_gain.ToString().Length * 1.2f), 0, -1);
-        textObj.transform.GetChild(0).localPosition = new Vector3(0, 0, 0);
+        textObj.transform.localPosition = new Vector3(25, 0.5f, 0);
         textObj.transform.GetChild(0).GetComponent<SpriteRenderer>().sprite = uiManager.GetResourceIcon()[_resource];
 
         Destroy(textObj, collectedDestroy);
@@ -448,7 +448,7 @@ public class PlanetScript : MonoBehaviour
 
         uiManager.AddNotificiton(planetInfo.name + " defenses reduced by " + _amount, planetInfo.dullSprite);
 
-        //check if unlocked
+        //check if planet has been unlocked
         if (GetPlanetInfo().defensePoints <= 0)
         {
             GetPlanetInfo().hasBeenUnlocked = true;
@@ -456,7 +456,9 @@ public class PlanetScript : MonoBehaviour
             GetComponent<SpriteRenderer>().sprite = planetInfo.sprite;
 
             uiManager.AddNotificiton("New Planet Discovered - " + planetInfo.name, planetInfo.sprite);
+            uiManager.ShowPlanetPopUp(this);
 
+            //add to unlocked and remove from locked
             transportManager.AddToLockedPlanet(false, this);
             transportManager.AddToUnlockedPlanet(true, this);
 
