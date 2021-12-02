@@ -9,6 +9,7 @@ public class UIManager : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private TextMeshProUGUI unitsText;
+    [SerializeField] private TextMeshProUGUI currencyText;
 
     [SerializeField] private Slider levelTierSliderProduction;
     [SerializeField] private Slider levelTierSliderStorage;
@@ -50,6 +51,14 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Sprite notificationIcon;
     [SerializeField] private Sprite crossIcon;
 
+    [SerializeField] private SoundManager soundManager;
+
+    [SerializeField] private AudioClip buttonPressSound;
+    [SerializeField] private AudioClip denySound;
+    [SerializeField] private AudioClip acceptSound;
+    [SerializeField] private AudioClip notificationSound;
+    [SerializeField] private AudioClip levelUpSound;
+
     [SerializeField] private float notificationWait;
 
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
@@ -57,6 +66,8 @@ public class UIManager : MonoBehaviour
     private PlanetScript selectedPlanet;
 
     private int resourceLength;
+
+    private int currency;
 
     private List<Sprite> notificationImageList = new List<Sprite>();
     private List<string> notificationTextList = new List<string>();
@@ -67,6 +78,8 @@ public class UIManager : MonoBehaviour
         SettingButtonPressed(false);
         //notificationBar.SetActive(true);
         resourceDeliveryScreen.SetActive(false);
+
+        UpdateCurrencyText(0);
 
         resourceLength = Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length - 1;
 
@@ -135,7 +148,7 @@ public class UIManager : MonoBehaviour
             resourceTextObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
             resourceTextObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
 
-            resourceTextObj.transform.GetChild(0).GetComponent<Image>().sprite = resourceIcons[i];
+            resourceTextObj.transform.GetChild(1).GetComponent<Image>().sprite = resourceIcons[i];
 
             int x = i;
             resourceTextObj.transform.GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
@@ -206,17 +219,21 @@ public class UIManager : MonoBehaviour
         for(int i = 0; i < resourceContent.transform.childCount; i++)
         {
             print("i " + i + " resource " + ((PlanetScript.ERESOURCES)i).ToString());
-            resourceContent.transform.GetChild(i).GetChild(1).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + (int)selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + (int)selectedPlanet.GetPlanetInfo().resourceMax[i];
+            resourceContent.transform.GetChild(i).GetChild(0).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + (int)selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + (int)selectedPlanet.GetPlanetInfo().resourceMax[i];
         }
     }
 
     public void UpgradeProductionButtonPressed(GameObject _obj)
     {
-        ButtonPurchaseSpawn(selectedPlanet.UpgradeProduction(), _obj.GetComponent<RectTransform>().anchoredPosition);
+        bool canBuy = selectedPlanet.UpgradeProduction();
+        soundManager.PlaySound((canBuy) ? acceptSound : denySound);
+        ButtonPurchaseSpawn(canBuy, _obj.GetComponent<RectTransform>().anchoredPosition);
     }
     public void UpgradeStorageButtonPressed(GameObject _obj)
     {
-        ButtonPurchaseSpawn(selectedPlanet.UpgradeStorage(), _obj.GetComponent<RectTransform>().anchoredPosition);
+        bool canBuy = selectedPlanet.UpgradeStorage();
+        soundManager.PlaySound((canBuy) ? acceptSound : denySound);
+        ButtonPurchaseSpawn(canBuy, _obj.GetComponent<RectTransform>().anchoredPosition);
     }
 
     public void UpgradeMaxTransportPressed()
@@ -285,6 +302,8 @@ public class UIManager : MonoBehaviour
         //loop time all notifications are done
         if (notificationTextList.Count >= 1)
         {
+            soundManager.PlaySound(notificationSound);
+
             notificationBar.GetComponent<Animator>().SetBool("Open", true);
             notificationBar.transform.GetChild(0).GetComponent<Image>().sprite = notificationImageList[0]; //image of notification bar
             notificationBar.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = notificationTextList[0]; //text of notification bar
@@ -477,5 +496,16 @@ public class UIManager : MonoBehaviour
         resourceDeliveryScreen.SetActive(false);
         attackPlanetScreen.SetActive(false);
         UpdateRequirementsText();
+    }
+
+    public void UpdateCurrencyText(int _i)
+    {
+        currency += _i;
+        currencyText.text = "" + currency;
+    }
+
+    public void PlayButtonPressSound()
+    {
+        soundManager.PlaySound(buttonPressSound);
     }
 }
