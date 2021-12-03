@@ -23,6 +23,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject planetInfoScreen;
     [SerializeField] private GameObject defaultScreen;
     [SerializeField] private GameObject settingsScreen;
+    [SerializeField] private GameObject buyCurrencyScreen;
 
     [SerializeField] private GameObject resourceContent;
     [SerializeField] private GameObject resourceText;
@@ -57,7 +58,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private AudioClip denySound;
     [SerializeField] private AudioClip acceptSound;
     [SerializeField] private AudioClip notificationSound;
-    [SerializeField] private AudioClip levelUpSound;
+    [SerializeField] private AudioClip planetSelectSound;
+    [SerializeField] private AudioClip closeSound;
 
     [SerializeField] private float notificationWait;
 
@@ -69,6 +71,8 @@ public class UIManager : MonoBehaviour
 
     private int currency;
 
+    private bool isMute = false;
+
     private List<Sprite> notificationImageList = new List<Sprite>();
     private List<string> notificationTextList = new List<string>();
 
@@ -76,12 +80,18 @@ public class UIManager : MonoBehaviour
     {
         SetActiveInfoBox(false);
         SettingButtonPressed(false);
+        ShowBuyCurrencyScreen(false);
         //notificationBar.SetActive(true);
         resourceDeliveryScreen.SetActive(false);
 
         UpdateCurrencyText(0);
 
         resourceLength = Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length - 1;
+
+        for(int i = 0; i < GetUnlockedResources().Count; i++)
+        {
+            AddNewResourceToContent(i);
+        }
 
         //getting saved unlocked resources
         for (int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
@@ -114,6 +124,7 @@ public class UIManager : MonoBehaviour
         selectedPlanet.ClickedOn();
         selectedPlanet = null;
         cameraScript.SetCanMove(true);
+        soundManager.PlaySound(closeSound);
     }
 
     public void UpdateInfoBox(PlanetScript _planetScript)
@@ -126,16 +137,20 @@ public class UIManager : MonoBehaviour
         cameraScript.MoveCamera(new Vector3(selectedPlanet.transform.position.x, selectedPlanet.transform.position.y - 2.8f, -10));
         cameraScript.SetCamZoom(cameraScript.GetStartingZoom());
 
+        soundManager.PlaySound(planetSelectSound);
+
         UpdateUnitsText();
         UpdateLevels();
         UpdateRequirementsText();
         CancelResourceDelivery();
 
         //clear old content
-        foreach (Transform child in resourceContent.transform)
+        /*foreach (Transform child in resourceContent.transform)
         {
             Destroy(child.gameObject);
         }
+
+        print("children 1 " + resourceContent.transform.childCount);
 
         //add resource text in resource tab
         for (int i = 0; i < unlockedResources.Count; i++)
@@ -152,11 +167,28 @@ public class UIManager : MonoBehaviour
 
             int x = i;
             resourceTextObj.transform.GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
-        }
+        }*/
 
+        print("children 2 " + resourceContent.transform.childCount);
         UpdateResourcesTab();
 
         resourceContent.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 40 * resourceLength);
+    }
+
+    void AddNewResourceToContent(int i)
+    {
+        GameObject resourceTextObj = Instantiate(resourceText, new Vector3(0, 0, 0), Quaternion.identity);
+        resourceTextObj.transform.SetParent(resourceContent.transform);
+        resourceTextObj.GetComponent<RectTransform>().anchoredPosition = new Vector2(14, -20 - (35 * i));
+        resourceTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(250, 32);
+        resourceTextObj.GetComponent<RectTransform>().anchorMax = new Vector2(0.5f, 1);
+        resourceTextObj.GetComponent<RectTransform>().anchorMin = new Vector2(0.5f, 1);
+        resourceTextObj.GetComponent<RectTransform>().localScale = new Vector2(1, 1);
+
+        resourceTextObj.transform.GetChild(1).GetComponent<Image>().sprite = resourceIcons[i];
+
+        int x = i;
+        resourceTextObj.transform.GetComponent<Button>().onClick.AddListener(delegate { TransferPressed((PlanetScript.ERESOURCES)x); });
     }
 
     //update upgrade requirements text
@@ -193,6 +225,7 @@ public class UIManager : MonoBehaviour
         descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
 
         //upgrade button sprites
+        print("update " + buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2) && CheckUnitLimit())]);
         GetUpgradeButton(0).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyProduction(selectedPlanet.GetLevelProdTier() * 2) && CheckUnitLimit())];
         GetUpgradeButton(1).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2) && CheckUnitLimit())];
     }
@@ -216,9 +249,11 @@ public class UIManager : MonoBehaviour
 
     public void UpdateResourcesTab()
     {
+        //print("children " + resourceContent.transform.childCount);
+
         for(int i = 0; i < resourceContent.transform.childCount; i++)
         {
-            print("i " + i + " resource " + ((PlanetScript.ERESOURCES)i).ToString());
+            //print("i " + i + " resource " + ((PlanetScript.ERESOURCES)i).ToString());
             resourceContent.transform.GetChild(i).GetChild(0).gameObject.GetComponent<TextMeshProUGUI>().text = ((PlanetScript.ERESOURCES)i).ToString() + ": " + (int)selectedPlanet.GetPlanetInfo().resourceValues[i] + "/" + (int)selectedPlanet.GetPlanetInfo().resourceMax[i];
         }
     }
@@ -275,6 +310,7 @@ public class UIManager : MonoBehaviour
         if (!unlockedResources.Contains(_resource))
         {
             unlockedResources.Add(_resource);
+            AddNewResourceToContent(GetUnlockedResources().Count - 1);
 
             if (_notifity) { AddNotificiton("New resource unlocked: " + _resource.ToString(), resourceIcons[(int)_resource]); }
         }
@@ -483,6 +519,12 @@ public class UIManager : MonoBehaviour
         settingsScreen.SetActive(_active);
     }
 
+    public void MutePressed()
+    {
+        isMute = !isMute;
+        soundManager.SetVolume(Convert.ToInt32(!isMute));
+    }
+
     void ButtonPurchaseSpawn(bool _worked, Vector3 _pos)
     {
         GameObject buttonPurchaseObj = Instantiate(buttonPurchase, new Vector3(0, 0, 0), Quaternion.identity);
@@ -507,5 +549,10 @@ public class UIManager : MonoBehaviour
     public void PlayButtonPressSound()
     {
         soundManager.PlaySound(buttonPressSound);
+    }
+
+    public void ShowBuyCurrencyScreen(bool _active)
+    {
+        buyCurrencyScreen.SetActive(_active);
     }
 }

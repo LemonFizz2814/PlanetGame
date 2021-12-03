@@ -283,6 +283,7 @@ MonoBehaviour:
     productionGain: []
     StorageMultiply: 0
     defenseMax: 10
+    gainedResources: 
     descriptionText: 'Text Text Text Text Text Text Text '
   upgradeReq:
     upProdResource: 00000000
@@ -308,6 +309,8 @@ MonoBehaviour:
   collectedDestroy: 1
   productionTextsParent: {fileID: 5794203775585219738}
   transportManager: {fileID: 0}
+  soundManager: {fileID: 0}
+  pickUpSound: {fileID: 8300000, guid: 615526be4ed742243829d274409f694e, type: 3}
 --- !u!212 &5794203777291048571
 SpriteRenderer:
   m_ObjectHideFlags: 0

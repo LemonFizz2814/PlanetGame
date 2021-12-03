@@ -90,7 +90,7 @@ public class PlanetScript : MonoBehaviour
     [SerializeField] private GameObject collectedTextPrefab;
     [SerializeField] private GameObject productionTextPrefab;
     [SerializeField] private GameObject x2PointsOutline;
-    private UIManager uiManager;
+    [SerializeField] private GameObject levelUpPrefab;
 
     [SerializeField] private float collectedSpawnRand;
     [SerializeField] private int collectedDestroy;
@@ -98,8 +98,15 @@ public class PlanetScript : MonoBehaviour
     [SerializeField] private Transform productionTextsParent;
 
     [SerializeField] TransportManager transportManager;
+    [SerializeField] SoundManager soundManager;
+
+    [SerializeField] AudioClip pickUpSound;
+    [SerializeField] AudioClip levelUpSound;
 
     List<TextMesh> productionText = new List<TextMesh>();
+
+    private UIManager uiManager;
+
 
     private int lengthOfAllResources;
     private int lengthOfProdRes;
@@ -257,6 +264,7 @@ public class PlanetScript : MonoBehaviour
         if(_amount > 0)
         {
             uiManager.AddNotificiton(_amount + " of " + _resource.ToString() + " arrived at " + planetInfo.name, planetInfo.sprite);
+            soundManager.PlaySound(pickUpSound);
         }
         else
         {
@@ -266,7 +274,7 @@ public class PlanetScript : MonoBehaviour
         if (planetInfo.resourceValues[(int)_resource] + _amount <= planetInfo.resourceMax[(int)_resource])
         {
             //do gain here
-            SpawnCollectedText((int)_resource, _amount);
+            //SpawnCollectedText((int)_resource, _amount);
             planetInfo.resourceValues[(int)_resource] += _amount;
             UpdateProductionText();
             return false;
@@ -298,8 +306,8 @@ public class PlanetScript : MonoBehaviour
 
             if (currentlyClicked)
             {
-                uiManager.UpdateResourcesTab();
                 uiManager.UpdateRequirementsText();
+                uiManager.UpdateResourcesTab();
             }
         }
     }
@@ -383,6 +391,8 @@ public class PlanetScript : MonoBehaviour
         if (planetInfo.levelProd % levelUpAmount == 0)
         {
             uiManager.AddNotificiton(planetInfo.name + " leveled up production to level " + GetLevelProdTier(), planetInfo.sprite);
+            Destroy(Instantiate(levelUpPrefab, transform.position, Quaternion.identity));
+            soundManager.PlaySound(levelUpSound);
             SetDoubleSpeed(levelUpDoubleSpeedTime);
             UpdateProductionText();
         }
@@ -397,6 +407,8 @@ public class PlanetScript : MonoBehaviour
         if (planetInfo.levelStor % levelUpAmount == 0)
         {
             uiManager.AddNotificiton(planetInfo.name + " leveled up storage to level " + GetLevelStorTier(), planetInfo.sprite);
+            Destroy(Instantiate(levelUpPrefab, transform.position, Quaternion.identity));
+            soundManager.PlaySound(levelUpSound);
             SetDoubleSpeed(levelUpDoubleSpeedTime);
         }
     }

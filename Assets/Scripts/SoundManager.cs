@@ -6,7 +6,7 @@ public class SoundManager : MonoBehaviour
 {
     AudioSource audioSource;
 
-    private void Start()
+    private void Awake()
     {
         audioSource = GetComponent<AudioSource>();
     }
@@ -14,5 +14,10 @@ public class SoundManager : MonoBehaviour
     public void PlaySound(AudioClip _clip)
     {
         audioSource.PlayOneShot(_clip);
+    }
+
+    public void SetVolume(float _volume)
+    {
+        audioSource.volume = _volume;
     }
 }

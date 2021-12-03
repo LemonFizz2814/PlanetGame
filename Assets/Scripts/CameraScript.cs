@@ -131,7 +131,6 @@ public class CameraScript : MonoBehaviour
     public void MoveCamera(Vector3 _pos)
     {
         prevPos = transform.position;
-        print("PrevPos " + prevPos);
         transform.position = new Vector3(_pos.x, _pos.y,  -10);
     }
 
