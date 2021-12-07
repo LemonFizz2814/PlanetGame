@@ -305,12 +305,20 @@ MonoBehaviour:
   collectedTextPrefab: {fileID: 6534788136387080625, guid: a659e706a8b279f4d83ec573be4a8069, type: 3}
   productionTextPrefab: {fileID: 3804773877274470262, guid: 7fdf4d8f1dc0e1c47ab1c8542fd2a79f, type: 3}
   x2PointsOutline: {fileID: 7842659356233795327}
+  levelUpPrefab: {fileID: 0}
+  defaultColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  fullColor:
+    serializedVersion: 2
+    rgba: 4284174079
   collectedSpawnRand: 1
   collectedDestroy: 1
   productionTextsParent: {fileID: 5794203775585219738}
   transportManager: {fileID: 0}
   soundManager: {fileID: 0}
   pickUpSound: {fileID: 8300000, guid: 615526be4ed742243829d274409f694e, type: 3}
+  levelUpSound: {fileID: 0}
 --- !u!212 &5794203777291048571
 SpriteRenderer:
   m_ObjectHideFlags: 0

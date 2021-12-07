@@ -5,8 +5,13 @@ using UnityEngine;
 public class AsteroidManager : MonoBehaviour
 {
     [SerializeField] private GameObject asteroidPrefab;
+    [SerializeField] private GameObject cameraObj;
+    [Space]
     [SerializeField] private float spawnWaitMax;
     [SerializeField] private float spawnWaitMin;
+    [Space]
+    [SerializeField] private float spawnPosX;
+    [SerializeField] private float spawnPosY;
 
     private void Start()
     {
@@ -16,11 +21,13 @@ public class AsteroidManager : MonoBehaviour
     private IEnumerator SpawnAsteroid()
     {
         yield return new WaitForSeconds(Random.Range(spawnWaitMin, spawnWaitMax));
-        Instantiate(asteroidPrefab, PickPosition(), Quaternion.identity);
+        GameObject _asteroid = Instantiate(asteroidPrefab, PickPosition(), Quaternion.identity);
+        _asteroid.GetComponent<AsteroidScript>().SetLookAt(cameraObj);
+        StartCoroutine(SpawnAsteroid());
     }
 
     Vector3 PickPosition()
     {
-        return Vector3.zero;
+        return new Vector3(spawnPosX * -Random.Range(0, 1), Random.Range(-spawnPosY, spawnPosY), 0);
     }
 }

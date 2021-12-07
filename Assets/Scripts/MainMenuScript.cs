@@ -7,8 +7,11 @@ public class MainMenuScript : MonoBehaviour
 {
     private float buttonPressDelay = 1;
 
+    [SerializeField] GameObject transition;
+
     private void Start()
     {
+        transition.SetActive(true);
         Screen.SetResolution(720, 1280, true);
         Application.targetFrameRate = 60;
     }
@@ -20,6 +23,7 @@ public class MainMenuScript : MonoBehaviour
 
     IEnumerator ButtonPressedWait()
     {
+        transition.GetComponent<Animator>().SetBool("IsMenu", true);
         yield return new WaitForSeconds(buttonPressDelay);
         SceneManager.LoadScene("MainScene");
     }

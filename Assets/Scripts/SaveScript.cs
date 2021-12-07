@@ -17,6 +17,9 @@ public class SaveScript : MonoBehaviour
         {
             PlayerPrefs.SetInt("FirstTime", 1);
 
+            PlayerPrefs.SetInt("Currency", 0);
+            PlayerPrefs.SetInt("twitterPressed", 0);
+
             for (int i = 0; i < Enum.GetNames(typeof(PlanetScript.ERESOURCES)).Length; i++)
             {
                 PlayerPrefs.SetFloat("resourceUnlocked" + i, 0);

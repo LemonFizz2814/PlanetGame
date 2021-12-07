@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.UI;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Advertisements;
 using System;
 using TMPro;
 
@@ -40,6 +41,9 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject planetUnlockedPopUp;
 
     [SerializeField] private GameObject buttonPurchase;
+    [SerializeField] private GameObject transitionObject;
+
+    [SerializeField] private Image muteImage;
 
     [SerializeField] private GameObject[] tabObjects;
 
@@ -48,6 +52,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Sprite[] resourceIcons;
     [SerializeField] private Sprite[] buttonPurchaseSprites;
     [SerializeField] private Sprite[] buttonReadySprites;
+    [SerializeField] private Sprite[] muteSprites;
 
     [SerializeField] private Sprite notificationIcon;
     [SerializeField] private Sprite crossIcon;
@@ -61,7 +66,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private AudioClip planetSelectSound;
     [SerializeField] private AudioClip closeSound;
 
-    [SerializeField] private float notificationWait;
+    [SerializeField] int adReward;
+    [SerializeField] int followReward;
 
     private List<PlanetScript.ERESOURCES> unlockedResources = new List<PlanetScript.ERESOURCES>();
 
@@ -75,14 +81,29 @@ public class UIManager : MonoBehaviour
 
     private List<Sprite> notificationImageList = new List<Sprite>();
     private List<string> notificationTextList = new List<string>();
+    private List<float> notificationTimeList = new List<float>();
+
+    enum EADTYPES
+    {
+        DoubleSpeed,
+        Currency,
+    };
+
+    private EADTYPES adType;
 
     private void Start()
     {
+        Advertisement.Initialize("4490264", true);
+
+        transitionObject.SetActive(true);
+
         SetActiveInfoBox(false);
         SettingButtonPressed(false);
         ShowBuyCurrencyScreen(false);
         //notificationBar.SetActive(true);
         resourceDeliveryScreen.SetActive(false);
+
+        currency = PlayerPrefs.GetInt("Currency");
 
         UpdateCurrencyText(0);
 
@@ -108,7 +129,7 @@ public class UIManager : MonoBehaviour
             Debug.LogError("resourceIcons length not same as ERESOURCES " + resourceIcons.Length + "/" + resourceLength);
         }
 
-        AddNotificiton("Welcome", notificationIcon);
+        AddNotificiton("Welcome", notificationIcon, 2.5f);
         SetPlanetPopUpActive(false);
     }
 
@@ -200,9 +221,11 @@ public class UIManager : MonoBehaviour
         //productionReqText.text = selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd].ToString() + ": " + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd];
         RequirementsText(0).text = selectedPlanet.GetPlanetInfo().resourceValues[(int)selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd]] + "/" + selectedPlanet.GetUpgradeRequirements().upProdAmount[levelTierProd];
         GetUpgradeButton(0).transform.GetChild(2).GetComponent<Image>().sprite = resourceIcons[(int)selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd]];
+        GetUpgradeButton(0).transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Production\n" + "+" + selectedPlanet.GetUpgradeRequirements().upProdIncrease[levelTierProd] + "%";
 
         RequirementsText(1).text = selectedPlanet.GetPlanetInfo().resourceValues[(int)selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor]] + "/" + selectedPlanet.GetUpgradeRequirements().upStorAmount[levelTierStor];
         GetUpgradeButton(1).transform.GetChild(2).GetComponent<Image>().sprite = resourceIcons[(int)selectedPlanet.GetUpgradeRequirements().upStorResource[levelTierStor]];
+        GetUpgradeButton(0).transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Storage\n" + "+" + selectedPlanet.GetUpgradeRequirements().upStorIncrease[levelTierStor] + "%";
 
         //second requirement for production
         if (selectedPlanet.GetUpgradeRequirements().upProdResource[levelTierProd + 1] != PlanetScript.ERESOURCES.None)
@@ -225,9 +248,15 @@ public class UIManager : MonoBehaviour
         descriptionText.text = selectedPlanet.GetPlanetInfo().descriptionText;
 
         //upgrade button sprites
-        print("update " + buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2) && CheckUnitLimit())]);
-        GetUpgradeButton(0).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyProduction(selectedPlanet.GetLevelProdTier() * 2) && CheckUnitLimit())];
-        GetUpgradeButton(1).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2) && CheckUnitLimit())];
+        //GetUpgradeButton(0).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyProduction(selectedPlanet.GetLevelProdTier() * 2) && CheckUnitLimit())];
+        //GetUpgradeButton(1).sprite = buttonReadySprites[Convert.ToInt32(selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2) && CheckUnitLimit())];
+        bool acceptProd = selectedPlanet.CanBuyProduction(selectedPlanet.GetLevelProdTier() * 2) && CheckUnitLimit();
+        bool acceptStor = selectedPlanet.CanBuyStorage(selectedPlanet.GetLevelStorTier() * 2) && CheckUnitLimit();
+
+        GetUpgradeButton(0).GetComponent<Animator>().SetBool("Accept", acceptProd);
+        GetUpgradeButton(0).GetComponent<Animator>().SetBool("Deny", !acceptProd);
+        GetUpgradeButton(1).GetComponent<Animator>().SetBool("Accept", acceptStor);
+        GetUpgradeButton(1).GetComponent<Animator>().SetBool("Deny", !acceptStor);
     }
 
     public TextMeshProUGUI RequirementsText(int _i)
@@ -312,7 +341,7 @@ public class UIManager : MonoBehaviour
             unlockedResources.Add(_resource);
             AddNewResourceToContent(GetUnlockedResources().Count - 1);
 
-            if (_notifity) { AddNotificiton("New resource unlocked: " + _resource.ToString(), resourceIcons[(int)_resource]); }
+            if (_notifity) { AddNotificiton("New resource unlocked: " + _resource.ToString(), resourceIcons[(int)_resource], 3.5f); }
         }
     }
     public List<PlanetScript.ERESOURCES> GetUnlockedResources()
@@ -320,10 +349,11 @@ public class UIManager : MonoBehaviour
         return unlockedResources;
     }
 
-    public void AddNotificiton(string _text, Sprite _image)
+    public void AddNotificiton(string _text, Sprite _image, float _time)
     {
         notificationTextList.Add(_text);
         notificationImageList.Add(_image);
+        notificationTimeList.Add(_time);
 
         //if there aren't already notifications 
         if (notificationTextList.Count <= 1)
@@ -344,7 +374,7 @@ public class UIManager : MonoBehaviour
             notificationBar.transform.GetChild(0).GetComponent<Image>().sprite = notificationImageList[0]; //image of notification bar
             notificationBar.transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = notificationTextList[0]; //text of notification bar
 
-            yield return new WaitForSeconds(notificationWait);
+            yield return new WaitForSeconds(notificationTimeList[0]);
 
             notificationImageList.RemoveAt(0);
             notificationTextList.RemoveAt(0);
@@ -363,8 +393,9 @@ public class UIManager : MonoBehaviour
 
     public void ShowTab(int _i)
     {
+
         //if space station and click on upgrade then set tab to space station upgrade tab instead
-        if(selectedPlanet.GetSpaceStationInfo().isSpaceStation && _i == 0)
+        if (selectedPlanet.GetSpaceStationInfo().isSpaceStation && _i == 0)
         {
             _i = 3;
         }
@@ -375,6 +406,8 @@ public class UIManager : MonoBehaviour
         }
 
         tabObjects[_i].SetActive(true);
+
+        UpdateRequirementsText();
     }
 
     public void TransferPressed(PlanetScript.ERESOURCES _resource)
@@ -477,7 +510,7 @@ public class UIManager : MonoBehaviour
             _resource,
             (int)selectedPlanet.GetPlanetInfo().resourceValues[(int)_resource]))
         {
-            AddNotificiton("Can't have more than " + transportManager.GetMaxTransport() + " transport vessels active", crossIcon);
+            AddNotificiton("Can't have more than " + transportManager.GetMaxTransport() + " transport vessels active", crossIcon, 2.5f);
         }
         else
         {
@@ -522,7 +555,77 @@ public class UIManager : MonoBehaviour
     public void MutePressed()
     {
         isMute = !isMute;
+        muteImage.sprite = muteSprites[Convert.ToInt32(isMute)];
         soundManager.SetVolume(Convert.ToInt32(!isMute));
+    }
+
+    public void ShowAdReward(int _adType)
+    {
+        adType = (EADTYPES)_adType;
+
+        //play ad
+
+        const string placementId = "rewardedVideo";
+
+        if (Advertisement.IsReady())
+        {
+            print("is ready!");
+            Advertisement.Show(placementId, new ShowOptions() { resultCallback = adViewResult });
+        }
+        else
+        {
+            print("is not ready!");
+        }
+    }
+
+    public void ShowAdVideo(int _adType)
+    {
+        adType = (EADTYPES)_adType;
+
+        //play ad
+
+        const string placementId = "video";
+
+        if (Advertisement.IsReady())
+        {
+            Advertisement.Show(placementId, new ShowOptions() { resultCallback = adViewResult });
+        }
+    }
+    private void adViewResult(ShowResult result)
+    {
+        switch (result)
+        {
+            case ShowResult.Finished:
+                Debug.Log("The ad was successfully shown.");
+                switch(adType)
+                {
+                    case EADTYPES.DoubleSpeed:
+                        break;
+                    case EADTYPES.Currency:
+                        UpdateCurrencyText(adReward);
+                        break;
+                }
+                break;
+            case ShowResult.Skipped:
+                Debug.Log("The ad was skipped before reaching the end.");
+
+                break;
+            case ShowResult.Failed:
+                Debug.LogError("The ad failed to be shown.");
+
+                break;
+        }
+    }
+
+    public void TwitterButtonPressed()
+    {
+        if (PlayerPrefs.GetInt("twitterPressed") == 0)
+        {
+            PlayerPrefs.SetInt("twitterPressed", 1);
+            UpdateCurrencyText(followReward);
+        }
+
+        Application.OpenURL("https://twitter.com/AppleSeedGames");
     }
 
     void ButtonPurchaseSpawn(bool _worked, Vector3 _pos)
@@ -544,6 +647,7 @@ public class UIManager : MonoBehaviour
     {
         currency += _i;
         currencyText.text = "" + currency;
+        PlayerPrefs.SetInt("Currency", currency);
     }
 
     public void PlayButtonPressSound()
